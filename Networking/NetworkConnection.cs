@@ -86,6 +86,8 @@ public sealed class NetworkConnection : IDisposable
         try
         {
             _tcpClient.Connect(host, port);
+            _reader = new StreamReader(_tcpClient.GetStream(), Encoding.UTF8);
+            _writer = new StreamWriter(_tcpClient.GetStream(), Encoding.UTF8) { AutoFlush = true };
         }
         catch (Exception ex) { Console.WriteLine(ex); }
     }
@@ -119,15 +121,15 @@ public sealed class NetworkConnection : IDisposable
     ///   connected), throw an InvalidOperationException.
     /// </summary>
     /// <returns> The contents of the message. </returns>
-    public string ReadLine( )
+    public string? ReadLine( )
     {
         // check for connection, if not connected throw new exception
         if (_reader == null || !IsConnected)
         {
             throw new InvalidOperationException("Cannot read message: reader/network disconnected");
         }
-        // read in new message from server
-        return _reader.ReadLine() ?? string.Empty;
+        string? message = _reader.ReadLine();
+        return message;
     }
 
     /// <summary>
@@ -141,6 +143,7 @@ public sealed class NetworkConnection : IDisposable
             _reader?.Dispose();
             _writer?.Dispose();
             _tcpClient.Dispose();
+            _tcpClient = new();
         }
     }
 
@@ -152,3 +155,4 @@ public sealed class NetworkConnection : IDisposable
         Disconnect();
     }
 }
+
