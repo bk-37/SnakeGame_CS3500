@@ -41,7 +41,7 @@ public partial class ChatServer
         string? name = null;
         try
         {
-            // first message is clients name
+            // first loop till name is valid 
             while (true)
             {
                 name = connection.ReadLine();
@@ -53,26 +53,37 @@ public partial class ChatServer
                 // add client and name to dict of clients
                 else
                 {
-                    clients[name] = connection;
+                    lock (name)
+                    {
+                        clients[name] = connection;
+                    }
                     break;
                 }
             }
+            // resume main chat room loop
             while (true)
             {
                 var message = connection.ReadLine();
-                //send message prepended with name
+                // check for null message from disconnect button
                 if (message != null)
-                    SendAll($"({name}) {message}");
+                    lock (message)
+                    {
+                        // send message prepended with name
+                        SendAll($"({name}) {message}");
+                    }
                 else
                     throw new IOException();
             }
         }
         catch (IOException)
         {
-            //remove from dictionary
-            clients.Remove(name);
-            //send message saying they left
-            SendAll($"{name} has left the server.");
+            lock (name)
+            {
+                //remove from dictionary
+                clients.Remove(name);
+                //send message saying they left
+                SendAll($"{name} has left the server.");
+            }
             //Disconnect the connection
             connection.Disconnect();
         }
@@ -83,20 +94,15 @@ public partial class ChatServer
     /// <param name="message"> message to send to clients</param>
     private static void SendAll(string message)
     {
+        // loop through clients
         foreach (var client in clients.Values)
         {
             try
             {
+                // send message 
                 client.Send(message);
             }
-            catch { }
+            catch(Exception ex) { Console.WriteLine(ex.Message); }
         }
     }
-}
-/// <summary>
-/// Exception for when a client disconnects
-/// </summary>
-public class DisconnectException : Exception
-{
-    public DisconnectException(string message) : base(message) { }
 }
