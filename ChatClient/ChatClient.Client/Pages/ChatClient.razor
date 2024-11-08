@@ -102,7 +102,6 @@
         try
         {
             network.Connect( ServerNameOrAddress, ServerPort );
-
             // Communicating with the server needs to be asynchronous so that the UI thread 
             // can continue drawing.
             new Thread( () =>

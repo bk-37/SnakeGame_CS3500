@@ -1,6 +1,12 @@
 ﻿// <copyright file="ChatServer.cs" company="UofU-CS3500">
 // Copyright (c) 2024 UofU-CS3500. All rights reserved.
 // </copyright>
+/// <authors>
+/// Brian Keller & Wyatt Young
+/// </authors>
+/// <version>
+/// November 3rd, 2024
+/// </version>
 
 using CS3500.Networking;
 using System.Text;
@@ -41,7 +47,7 @@ public partial class ChatServer
             {
                 var message = connection.ReadLine( );
 
-                connection.Send( "thanks!" );
+                connection.Send( message );
             }
         }
         catch ( Exception )
