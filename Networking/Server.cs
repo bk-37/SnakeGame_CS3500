@@ -23,10 +23,6 @@ public static class Server
     /// private static member variable for TCP listener initialized in StartServer. Null if server not started
     /// </summary>
     private static TcpListener? _listener;
-    ///// <summary>
-    ///// Private member list of clients currently on server. Null if no clients
-    ///// </summary>
-    //private static List<TcpClient>? clients;
 
     /// <summary>
     ///   Wait on a TcpListener for new connections. Alert the main program
@@ -41,7 +37,6 @@ public static class Server
     {
         // create and start new TCP listener and initialize list of clients
         _listener = new(IPAddress.Any, port);
-        //clients = new();
         _listener.Start();
         // asynchronously accept connections into new threads
         while (true) 
