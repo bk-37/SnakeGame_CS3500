@@ -25,6 +25,18 @@ namespace GUI.Client.Controllers
         private int worldSize;
 
         /// <summary>
+        /// private member boolean that denotes whether the client has recieved
+        /// the ID and world size and walls from server. Thus it may start making frame commands.
+        /// </summary>
+        private bool clientCommands = false;
+
+        /// <summary>
+        /// private member boolean that denotes whether a command has already been sent
+        /// by the client during the current frame.
+        /// </summary>
+        private bool commandOnFrame = false;
+
+        /// <summary>
         /// Constructor method for network controller 
         /// </summary>
         /// <param name="connection"></param>
@@ -55,6 +67,22 @@ namespace GUI.Client.Controllers
                 //receive player id and worldsize from server
                 ID = int.Parse(connection.ReadLine() ?? "0");
                 worldSize = int.Parse(connection.ReadLine() ?? "0");
+                //recieve walls
+                string? message;
+                while ((message = connection.ReadLine()) != null) 
+                {
+                    if (message.Contains("\"wall\""))
+                    {
+                        Wall? wall = JsonSerializer.Deserialize<Wall>(message);
+                    }
+                    else 
+                    {
+                        //no more wall objects
+                        break;
+                    }
+                }
+                clientCommands = true;
+                //concurrently recueve current state of game at each frame as well as walls
                 await GetUpdates();
             }
         }
@@ -65,17 +93,25 @@ namespace GUI.Client.Controllers
         /// <param name="message"></param>
         private void ParseMessage(string message)
         {
-            if (message.Contains("\"wall\""))
-            {
-                Wall? wall = JsonSerializer.Deserialize<Wall>(message);
-            }
-            else if (message.Contains("\"snake\""))
+            if (message.Contains("\"snake\""))
             {
                 Snake? snake = JsonSerializer.Deserialize<Snake>(message);
+                if (snake.died == true)
+                {
+                    //remove/hide snake in model
+                }
+                else 
+                {
+                    //update or add snake in model
+                }
             }
             else if (message.Contains("\"power\""))
             {
                 Power? power = JsonSerializer.Deserialize<Power>(message);
+                if (power.died == true) 
+                {
+                    //remove used powerup
+                }
             }
         }
 
@@ -85,12 +121,18 @@ namespace GUI.Client.Controllers
         /// <param name="direction"></param> corresponds to input direction (up, down, left, right)
         private void SendMovementDirection(string direction) 
         {
-            //create an object to hold the command with the moving keyword
-            var sendable = new {moving = direction};
-            //serialize into JSON 
-            string json = JsonSerializer.Serialize(sendable);
-            //send it
-            connection.Send(json);
+            // ensure commands are allowed on frame
+            if (clientCommands && !commandOnFrame)
+            {
+                //create an object to hold the command with the moving keyword
+                var sendable = new { moving = direction };
+                //serialize into JSON 
+                string json = JsonSerializer.Serialize(sendable);
+                //send it
+                connection.Send(json);
+                // one command per frame
+                commandOnFrame = true;
+            }
         }
 
         /// <summary>
@@ -136,10 +178,11 @@ namespace GUI.Client.Controllers
         {
             while (connection.IsConnected)
             {
-                string message = connection.ReadLine();
+                string? message = connection.ReadLine();
                 if (!string.IsNullOrEmpty(message))
                 {
                     ParseMessage(message);
+                    commandOnFrame = false;
                 }
             }
 
