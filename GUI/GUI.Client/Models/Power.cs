@@ -1,6 +1,49 @@
 ﻿namespace GUI.Client.Models
 {
+    /// <summary>
+    /// Class to represent power up objects in each frame update of game. Power ups can be collected by player snakes in order to grow the snake body in length.
+    /// Contains attributes/properties thare sent from server JSON in each frame.
+    /// <authors>
+    /// Brian Keller & Wyatt Young
+    /// </authors>
+    /// <versions>
+    /// November 17th, 2024
+    /// </versions>
+    /// </summary>
     public class Power
     {
+        /// <summary>
+        /// private field for a power ups unique id
+        /// </summary>
+        private int power;
+        /// <summary>
+        /// private field for a Point2D object that represents the powerups location on the backdrop.
+        /// </summary>
+        private Point2D loc;
+        /// <summary>
+        /// private member denoting whether this power up has been used by a player on this frame. Only sent once by server as true.
+        /// </summary>
+        private bool died;
+        /// <summary>
+        /// public property for a power up objects unique id
+        /// </summary>
+        public int power { get; set; }
+        /// <summary>
+        /// public property for a power up objects location via Point2D object
+        /// </summary>
+        public Point2D loc {  get; set; }
+        /// <summary>
+        /// public property for the died member variable denoting whether a power up was collected on the frame.
+        /// </summary>
+        public bool died { get; set; }
+        /// <summary>
+        /// defauilt constructor for Power class representing a power up object in the game that can be collected by players. ID set to 0 to denote default construction.
+        /// </summary>
+        public Power() 
+        {
+            this.power = 0;
+            this.power loc = new();
+            this.died = false;
+        }
     }
 }

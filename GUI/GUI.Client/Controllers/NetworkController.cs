@@ -5,7 +5,13 @@ namespace GUI.Client.Controllers
 {
     /// <summary>
     /// Responsible for parsing information received from the network and
-    /// updating the model based on that information
+    /// updating the model based on that information.
+    /// <authors>
+    /// Brian Keller & Wyatt Young
+    /// </authors>
+    /// <versions>
+    /// November 17th, 2024
+    /// </versions>
     /// </summary>
     public class NetworkController
     {
@@ -15,14 +21,14 @@ namespace GUI.Client.Controllers
         private readonly NetworkConnection connection;
 
         /// <summary>
-        /// member variable to hold the player's integer ID number
+        /// member variable to hold the THIS player's snake object
         /// </summary>
-        private int ID;
+        private Snake snake;
 
         /// <summary>
-        /// Member variable to hold the world size
+        /// Member variable to hold a World object that represnets current state of game from server. 
         /// </summary>
-        private int worldSize;
+        private World world;
 
         /// <summary>
         /// private member boolean that denotes whether the client has recieved
@@ -65,8 +71,11 @@ namespace GUI.Client.Controllers
                 //send player's name to server once connected
                 connection.Send(name);
                 //receive player id and worldsize from server
-                ID = int.Parse(connection.ReadLine() ?? "0");
-                worldSize = int.Parse(connection.ReadLine() ?? "0");
+                int id = int.Parse(connection.ReadLine() ?? "0");
+                int worldSize = int.Parse(connection.ReadLine() ?? "0");
+                // initialize player as well as world
+                snake = new Snake(id);
+                world = new World(worldSize);
                 //recieve walls
                 string? message;
                 while ((message = connection.ReadLine()) != null) 
@@ -74,6 +83,7 @@ namespace GUI.Client.Controllers
                     if (message.Contains("\"wall\""))
                     {
                         Wall? wall = JsonSerializer.Deserialize<Wall>(message);
+                        world.AddWall(wall);
                     }
                     else 
                     {
