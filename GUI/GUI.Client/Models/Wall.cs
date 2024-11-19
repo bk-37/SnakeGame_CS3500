@@ -13,18 +13,6 @@
     public class Wall
     {
         /// <summary>
-        /// private field for a walls unique id
-        /// </summary>
-        private int wall;
-        /// <summary>
-        /// private field for Point2D object representing the first endpoint of the wall.
-        /// </summary>
-        private Point2D p1;
-        /// <summary>
-        /// private field for Point2D object representing the second endpoint of the wall.
-        /// </summary>
-        private Point2D p2;
-        /// <summary>
         /// public property for walls unique id
         /// </summary>
         public int wall{get; set;}

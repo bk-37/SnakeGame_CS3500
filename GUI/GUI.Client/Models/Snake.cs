@@ -12,42 +12,6 @@
     public class Snake
     {
         /// <summary>
-        /// private field represneting a snakes unique player ID
-        /// </summary>
-        private int snake;
-        /// <summary>
-        /// private field representing a snakes player name
-        /// </summary>
-        private string name;
-        /// <summary>
-        /// private field list representing the coordinates of the snakes body on each frame. Each point in list represents on vertex of body.
-        /// </summary>
-        private List<Point2D> body;
-        /// <summary>
-        /// private Point 2D field containing the on-axis direction of the snake
-        /// </summary>
-        private Point2D dir;
-        /// <summary>
-        /// private int field the repreents a players score
-        /// </summary>
-        private int score;
-        /// <summary>
-        /// private field denoting whether or not the players snake has died during previous frame
-        /// </summary>
-        private bool died;
-        /// <summary>
-        /// a private bool field denoting whether a snake is alive.
-        /// </summary>
-        private bool alive;
-        /// <summary>
-        /// private field denoting whether the player has disconnected from the server on the last frame
-        /// </summary>
-        private bool dc
-        /// <summary>
-        /// private field denoting whether or not the player joined on the last frame
-        /// </summary>
-        private bool join;
-        /// <summary>
         /// public property for the id number of the snake object
         /// </summary>
         public int snake

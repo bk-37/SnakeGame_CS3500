@@ -13,18 +13,6 @@
     public class Power
     {
         /// <summary>
-        /// private field for a power ups unique id
-        /// </summary>
-        private int power;
-        /// <summary>
-        /// private field for a Point2D object that represents the powerups location on the backdrop.
-        /// </summary>
-        private Point2D loc;
-        /// <summary>
-        /// private member denoting whether this power up has been used by a player on this frame. Only sent once by server as true.
-        /// </summary>
-        private bool died;
-        /// <summary>
         /// public property for a power up objects unique id
         /// </summary>
         public int power { get; set; }
@@ -42,7 +30,7 @@
         public Power() 
         {
             this.power = 0;
-            this.power loc = new();
+            this.loc = new();
             this.died = false;
         }
     }

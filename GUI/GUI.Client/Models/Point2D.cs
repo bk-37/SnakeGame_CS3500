@@ -12,14 +12,6 @@
     public class Point2D
     {
         /// <summary>
-        /// private member int field that represents the X coordinate of an object on the frame.
-        /// </summary>
-        private int X;
-        /// <summary>
-        /// private member int field that represents the Y coordinate of an object on the frame.
-        /// </summary>
-        private int Y;
-        /// <summary>
         /// public property for the X coordinate of a Point2D object
         /// </summary>
         public int X { get; set; }

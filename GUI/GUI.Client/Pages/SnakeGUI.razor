@@ -6,23 +6,24 @@
 @using System.Numerics
 @using System.Diagnostics
 @using System.Text.Json
+@using CS3500.Networking
+@using GUI.Client.Controllers
 @inject IJSRuntime JsRuntime;
 
 <PageTitle> Snake </PageTitle>
 
 <!-- Game UI -->
-<div id="gameContainer" style="position: fixed; width: 100%; height: 100%; display: flex; flex-direction: column;">
-    <!-- Connection Controls -->
-    <div id="controls" style="margin: auto; text-align: center;">
-        <input type="text" placeholder="Enter Player Name" @bind="playerName" />
-        <input type="text" placeholder="Server Address" @bind="serverAddress" />
-        <input type="text" placeholder="Port" @bind="port" />
-        <button @onclick="connectToServer">Connect</button>
-        <p style="color: red;">@connectionError</p>
+<div id="gameContainer" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
+    <!-- Controls Section -->
+    <div id="controls" style="text-align: center; padding: 10px; background-color: #f4f4f4; z-index: 10;">
+        <input type="text" placeholder="Enter Player Name" @bind="playerName" style="margin: 5px;" />
+        <input type="text" placeholder="Server Address" @bind="serverAddress" style="margin: 5px;" />
+        <input type="text" placeholder="Port" @bind="port" style="margin: 5px;" />
+        <button @onclick="connectToServer" style="margin: 5px;">Connect</button>
     </div>
 
     <!-- Game Canvas -->
-    <div id="snakeCanvas" style="position: relative; width: 100%; height: 100%; display: none;" @ref="canvasContainer">
+    <div id="snakeCanvas" style="position: fixed; width: 100%; height: 100%">
         <BECanvas Width="1000" Height="1000" @ref="canvasReference"></BECanvas>
     </div>
 </div>
@@ -31,11 +32,12 @@
     private BECanvasComponent canvasReference = null!;
     private Canvas2DContext context = null!;
     private IJSObjectReference jsModule = null!;
-    
+
     private string playerName = string.Empty;
     private string serverAddress = "localhost";
     private int port = 11000;
-    private string? connectionError;
+    private NetworkConnection? Connection;
+    private NetworkController? Controller;
     private bool isConnected = false;
 
 
@@ -52,21 +54,29 @@
 
             // in the meantime, draw something to initialize the canvas
             // you may want to remove this after you are drawing something
-            await context.SetFillStyleAsync( "lightblue" );
-            await context.FillRectAsync( 0, 0, 1000, 1000 );
+            // await context.SetFillStyleAsync( "lightblue" );
+            // await context.FillRectAsync( 0, 0, 1000, 1000 );
+            // await context.DrawImageAsync(backgroundImage, -world.Width / 2, -world.Height / 2, world.Width, world.Height);
         }
     }
 
     private async Task connectToServer()
     {
         try
-            {
-                NetworkConnection connection = new;
-                connection.ConnectToServer(playerName, serverAddress, port);
-                isConnected = true;
-            }
+        {
+            Connection = new NetworkConnection();
+            Controller = new(Connection);
+            Debug.WriteLine("Initialized from connectToServer()");
+            await Controller.ConnectToServer(playerName, serverAddress, port);
+            isConnected = true;
+            Debug.WriteLine("ConnectToServer() connected");
+        }
         catch(Exception ex)
-            
+        {
+            isConnected = false;
+            Debug.WriteLine($"ConnectToServer(): {ex.Message}");
+        }
+
     }
 
 
@@ -75,11 +85,12 @@
     {
         // TODO: Once the client is connected and the handshake is complete,
         //       invoke some controller method to send the appropriate command to the server
-
-
-        // TODO: Remove this, which is just here to show you what the 'key' string is for whatever key you pressed
         Debug.WriteLine("key pressed: " + key);
+        if (Controller != null)
+        {
+            Controller.HandleKey(key);
+        }
+        else { Debug.WriteLine("HandleKeyPress(): controller null"); }
     }
-
 }
 

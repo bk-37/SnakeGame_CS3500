@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics;
+using System.Text.Json;
 using CS3500.Networking;
 using GUI.Client.Models;
 namespace GUI.Client.Controllers
@@ -54,9 +55,9 @@ namespace GUI.Client.Controllers
         /// <summary>
         /// Method for connecting to server and sending it the player's name
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="host"></param>
-        /// <param name="port"></param>
+        /// <param name="name">name of player connecting</param>
+        /// <param name="host">host server, deafult to localhost</param>
+        /// <param name="port">port for game server</param>
         /// <returns></returns>
         public async Task ConnectToServer(string name, string host, int port)
         {
@@ -64,26 +65,34 @@ namespace GUI.Client.Controllers
             if (name.Length > 16)
             {
                 name = name.Substring(0, 16);
-            }          
+            }
             connection.Connect(host, port);
             if (connection.IsConnected)
             {
+                Debug.WriteLine("ConnectToServer(): Client Connected!");
                 //send player's name to server once connected
                 connection.Send(name);
                 //receive player id and worldsize from server
                 int id = int.Parse(connection.ReadLine() ?? "0");
+                Debug.WriteLine("ConnectToServer(): id: "+id);
                 int worldSize = int.Parse(connection.ReadLine() ?? "0");
-                // initialize player as well as world
+                Debug.WriteLine("ConnectToServer(): World Size: "+worldSize);
+                // initialize this player as well as world
                 snake = new Snake(id);
                 world = new World(worldSize);
                 //recieve walls
                 string? message;
                 while ((message = connection.ReadLine()) != null) 
                 {
+                    Debug.WriteLine(message);
                     if (message.Contains("\"wall\""))
                     {
                         Wall? wall = JsonSerializer.Deserialize<Wall>(message);
-                        world.AddWall(wall);
+                        if (wall != null)
+                        {
+                            world.AddWall(wall);
+                        }
+                        Debug.WriteLine("Walls found");
                     }
                     else 
                     {
@@ -109,18 +118,26 @@ namespace GUI.Client.Controllers
                 if (snake.died == true)
                 {
                     //remove/hide snake in model
+                    world.RemoveSnake(snake);
                 }
                 else 
                 {
                     //update or add snake in model
+                    world.AddSnake(snake);
                 }
             }
             else if (message.Contains("\"power\""))
             {
                 Power? power = JsonSerializer.Deserialize<Power>(message);
-                if (power.died == true) 
+                if (power.died == true)
                 {
-                    //remove used powerup
+                    //remove/hide power up in model
+                    world.RemovePowerup(power);
+                }
+                else
+                {
+                    //update or add power up in model
+                    world.AddPowerup(power);
                 }
             }
         }
@@ -138,46 +155,36 @@ namespace GUI.Client.Controllers
                 var sendable = new { moving = direction };
                 //serialize into JSON 
                 string json = JsonSerializer.Serialize(sendable);
+                Debug.WriteLine("SendMovementDirection() serialized key press:"   + json);
                 //send it
                 connection.Send(json);
                 // one command per frame
                 commandOnFrame = true;
             }
         }
-
         /// <summary>
-        /// Helper method for handling up key press
+        /// public wrapper method to handle arrow key presses from GUI
         /// </summary>
-        public void HandleUp()
+        /// <param name="key"></param>
+        public void HandleKey(string key) 
         {
-            SendMovementDirection("up");
-        }
-
-
-        /// <summary>
-        /// Helper method for handling down key press
-        /// </summary>
-        public void HandleDown()
-        {
-            SendMovementDirection("down");
-        }
-
-
-        /// <summary>
-        /// Helper method for handling left key press
-        /// </summary>
-        public void HandleLeft()
-        {
-            SendMovementDirection("left");
-        }
-
-
-        /// <summary>
-        /// Helper method for handling right key press
-        /// </summary>
-        public void HandleRight()
-        {
-            SendMovementDirection("right");
+            Debug.WriteLine("HandleKey() handling key press: "+key);
+            if (key == "w")
+            {
+                SendMovementDirection("up");
+            }
+            else if (key == "s")
+            {
+                SendMovementDirection("down");
+            }
+            else if (key == "a")
+            {
+                SendMovementDirection("left");
+            }
+            else 
+            {
+                SendMovementDirection("right");
+            }
         }
 
         /// <summary>
@@ -186,6 +193,7 @@ namespace GUI.Client.Controllers
         /// <returns></returns>
         private async Task GetUpdates()
         {
+            Debug.WriteLine("GetUpdates() reached");
             while (connection.IsConnected)
             {
                 string? message = connection.ReadLine();

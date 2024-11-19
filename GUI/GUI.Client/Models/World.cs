@@ -18,17 +18,17 @@ namespace GUI.Client.Models
         /// </summary>
         int WorldSize;
         /// <summary>
-        /// private member field to store snake/player objecst and their corresponding ids.
+        /// private dictionary field to store snake/player objecst and their corresponding ids.
         /// </summary>
-        private List<Snake> snakes;
+        private Dictionary<int, Snake> snakes;
         /// <summary>
         /// private field to store list of walls upon server startup
         /// </summary>
         private List<Wall> walls;
         /// <summary>
-        /// private field to store list of powerups active in the current frame.
+        /// private field to store dictionary of powerups active in the current frame.
         /// </summary>
-        private List<Power> powerups;
+        private Dictionary<int, Power> powerups;
         /// <summary>
         /// constructor for World object to represent games state in current frame. Initialzied with worldsize
         /// </summary>
@@ -36,6 +36,9 @@ namespace GUI.Client.Models
         public World(int worldsize) 
         {
             this.WorldSize = worldsize;
+            snakes = new Dictionary<int, Snake>();
+            walls = new List<Wall>();
+            powerups = new Dictionary<int, Power>();
         }
         /// <summary>
         /// method to remove all dead objects from game. Includes snakes and powerups.
@@ -44,20 +47,60 @@ namespace GUI.Client.Models
         {
             for (int i = snakes.Count - 1; i >= 0; i--) 
             {
-                if (snakes[i].died) { snakes.Remove(snakes[i]); }
+                if (snakes[i].died) { snakes.Remove(snakes[i].snake); }
             }
             for (int i = powerups.Count - 1; i >= 0; i--) 
             {
-                if (powerups[i].died) {  powerups.Remove(powerups[i]);}
+                if (powerups[i].died) {  powerups.Remove(powerups[i].power);}
             }
         }
         /// <summary>
-        /// private helper method to add wall object to list of walls
+        /// helper method to add wall object to list of walls
         /// </summary>
         /// <param name="wall">wall object to be added</param>
-        private void AddWall(Wall wall) 
+        public void AddWall(Wall wall) 
         {
             walls.Add(wall);
+        }
+        /// <summary>
+        /// helper method to add snake object to dictionary of snakes using id as key.
+        /// </summary>
+        /// <param name="snake">snake object to be added</param>
+        public void AddSnake(Snake snake)
+        {
+            snakes[snake.snake] = snake;
+        }
+        /// <summary>
+        /// helper method to add power up objects to dictionary of power ups
+        /// </summary>
+        /// <param name="power">power up object to be added</param>
+        public void AddPowerup(Power power)
+        {
+            powerups[power.power] = power;
+        }
+        /// <summary>
+        /// helper method to remove wall object to list of walls
+        /// </summary>
+        /// <param name="wall">wall object to be removed</param>
+        public void RemoveWall(Wall wall)
+        {
+            walls.Remove(wall);
+        }
+        /// <summary>
+        /// helper method to remove snake object to dictionary of snakes using id as key.
+        /// </summary>
+        /// <param name="snake">snake object to be removed</param>
+        public void RemoveSnake(Snake snake)
+        {
+            snakes.Remove(snake.snake);
+        }
+        /// <summary>
+        /// helper method to remove power up objects to dictionary of power ups
+        /// </summary>
+        /// <param name="power">power up object to be remove</param>
+        public void RemovePowerup(Power power)
+        {
+            powerups.Remove(power.power);
         }
     }
 }
