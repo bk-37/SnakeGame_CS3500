@@ -17,7 +17,7 @@
         public int snake
         {
             get;
-            set;
+            private set;
         }
         /// <summary>
         /// public property for the snake object's name
@@ -25,7 +25,7 @@
         public string name
         {
             get;
-            set;
+            private set;
         }
         /// <summary>
         /// public property for the list of points representing the snake object's body
@@ -33,7 +33,7 @@
         public List<Point2D> body
         {
             get;
-            set;
+            private set;
         }
         /// <summary>
         /// getter and setter property for the snake's orientation
@@ -41,7 +41,7 @@
         public Point2D dir
         {
             get;
-            set;
+            private set;
         }
         /// <summary>
         /// public property to get and set the snake object's score
@@ -49,7 +49,7 @@
         public int score
         {
             get;
-            set;
+            private set;
         }
         /// <summary>
         /// public property to determine if the snake died on the most recent frame
@@ -57,7 +57,7 @@
         public bool died
         {
             get;
-            set;
+            private set;
         }
         /// <summary>
         /// public property for alive field denoting whether the snake is alive or dead in the given frame.
@@ -65,7 +65,7 @@
         public bool alive 
         {
             get;
-            set;
+            private set;
         }
         /// <summary>
         /// public property to set whether or not the snake object is disconnected on a frame
@@ -73,7 +73,7 @@
         public bool dc
         {
             get;
-            set;
+            private set;
         }
         /// <summary>
         /// public property to get and set whether or not a player joined on a frame
@@ -81,7 +81,7 @@
         public bool join
         {
             get; 
-            set;
+            private set;
         }
         /// <summary>
         /// Default constructor for snake class. Fields set to values that are common to every snake upon startup. ID set to 0 to denote default construction.

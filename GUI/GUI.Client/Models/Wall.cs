@@ -15,15 +15,15 @@
         /// <summary>
         /// public property for walls unique id
         /// </summary>
-        public int wall{get; set;}
+        public int wall{get; private set;}
         /// <summary>
         /// public property for first Point2D endpoint of wall
         /// </summary>
-        public Point2D p1 { get; set;}
+        public Point2D p1 { get; private set;}
         /// <summary>
         /// public property for second Point2D endpoint of wall
         /// </summary>
-        public Point2D p2 { get; set; }
+        public Point2D p2 { get; private set; }
         /// <summary>
         /// default constructor object representing wall object from server. ID set to 0 to denote default construction.
         /// </summary>
