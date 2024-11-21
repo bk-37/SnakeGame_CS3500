@@ -44,6 +44,14 @@ namespace GUI.Client.Models
             walls = new List<Wall>();
             powerups = new Dictionary<int, Power>();
         }
+
+        public World(World world)
+        {
+            this.WorldSize = world.WorldSize;
+            this.snakes = world.snakes;
+            this.walls = world.walls;
+            this.powerups = world.powerups;
+        }
         /// <summary>
         /// method to remove all dead objects from game. Includes snakes and powerups.
         /// </summary>

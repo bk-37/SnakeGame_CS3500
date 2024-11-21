@@ -49,7 +49,7 @@ namespace GUI.Client.Models
             this.p1 = p1;
             this.p2 = p2;
         }
-
+        
         public override string ToString()
         {
             return $"Wall: P1({p1.X}, {p1.Y}) - P2({p2.X}, {p2.Y})";

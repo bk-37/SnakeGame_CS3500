@@ -34,13 +34,10 @@
     private BECanvasComponent canvasReference = null!;
     private Canvas2DContext context = null!;
     private IJSObjectReference jsModule = null!;
-
     private string playerName = string.Empty;
     private string serverAddress = "localhost";
     private int port = 11000;
-    private NetworkConnection? Connection;
-    private NetworkController? Controller;
-    private bool isConnected = false;
+    private NetworkController Controller = new();
     private ElementReference backgroundImage;
     private const int viewSize = 1000;
     private Point2D head;
@@ -55,24 +52,22 @@
             jsModule = await JsRuntime.InvokeAsync<IJSObjectReference>( "import", "./Pages/SnakeGUI.razor.js" );
             context = await canvasReference.CreateCanvas2DAsync();
             await JsRuntime.InvokeAsync<object>( "initRenderJS", DotNetObjectReference.Create( this ) );
+            Debug.WriteLine("preparing to loop");
             GameLoop();
+            await context.DrawImageAsync(backgroundImage, 0, 0, viewSize, viewSize);
+
         }
     }
 
-    private async Task connectToServer()
+    private void connectToServer()
     {
         try
         {
-            Connection = new NetworkConnection();
-            Controller = new(Connection);
-            Debug.WriteLine("Initialized from connectToServer()");
-            await Controller.ConnectToServer(playerName, serverAddress, port);
-            isConnected = true;
+            Controller.ConnectToServer(playerName, serverAddress, port);
             Debug.WriteLine("ConnectToServer() connected");
         }
         catch(Exception ex)
         {
-            isConnected = false;
             Debug.WriteLine($"ConnectToServer(): {ex.Message}");
         }
 
@@ -94,22 +89,35 @@
 
     private async void GameLoop()
     {
-        while (true)
+        while (!Controller.connection.IsConnected)
+        {
+            await Task.Delay(100);
+        }
+        Controller.ReadServerMessageAsync();
+        while (Controller.connection.IsConnected)
         {
             await DrawFrame();
-            Thread.Sleep(100);
+            Thread.Sleep(20);
         }
+
     }
 
     private async Task DrawFrame()
     {
-        World? TheWorld = null;
-        Snake? snake = null;
+        World? WorldCopy = null;
         if(Controller != null)
         {
-            TheWorld = Controller.world;
-            snake = Controller.snake;
+            lock(Controller.world)
+            {
+                WorldCopy = new World(Controller.world);
+            }
         }
+
+        //get our snake
+        WorldCopy.snakes.TryGetValue(Controller.id, out Snake? playerSnake);
+        //update the head point
+        if (playerSnake != null)
+            head = playerSnake.body.LastOrDefault(new Point2D(0, 0));
         await context.BeginBatchAsync();
         // clip the view so that objects drawn outside the canvas will not be shown
         await context.BeginPathAsync();
@@ -119,30 +127,26 @@
         // Because we are modifying the transformation matrix, we need to save it so we can restore it at the end
         await context.SaveAsync();
 
-        //update the head point
-        if(snake != null)
-            head = snake.body.FirstOrDefault() ?? new Point2D(0, 0);
-
         // Center on origin, move to center of view port
         await context.TranslateAsync(viewSize / 2, viewSize / 2);
         if(head != null)
             await context.TranslateAsync(-head.X, -head.Y);
         // Draw the background:
-        if (TheWorld != null)
+        if (WorldCopy != null)
         {
-            await context.DrawImageAsync(backgroundImage, -TheWorld.WorldSize / 2, -TheWorld.WorldSize / 2, TheWorld.WorldSize, TheWorld.WorldSize);
+            await context.DrawImageAsync(backgroundImage, -WorldCopy.WorldSize / 2, -WorldCopy.WorldSize / 2, WorldCopy.WorldSize, WorldCopy.WorldSize);
             //loop through walls and draw them
-            foreach(Wall wall in TheWorld.walls)
+            foreach(Wall wall in WorldCopy.walls)
             {
                 await wall.Draw(context, wallImage);
             }
             //draw powerups
-            foreach(Power powerup in TheWorld.powerups.Values)
+            foreach(Power powerup in WorldCopy.powerups.Values)
             {
                 await powerup.Draw(context);
             }
             //draw snakes
-            foreach (Snake snakes in TheWorld.snakes.Values)
+            foreach (Snake snakes in WorldCopy.snakes.Values)
             {
                 await snakes.Draw(context);
             }

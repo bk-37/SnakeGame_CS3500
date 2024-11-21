@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using CS3500.Networking;
 using GUI.Client.Models;
@@ -19,7 +20,7 @@ namespace GUI.Client.Controllers
         /// <summary>
         /// Member variable to represent our network connection
         /// </summary>
-        private readonly NetworkConnection connection;
+        public NetworkConnection connection {  get; private set; } = new NetworkConnection();   
 
         /// <summary>
         /// property to hold the THIS player's snake object
@@ -29,7 +30,7 @@ namespace GUI.Client.Controllers
         /// <summary>
         /// property to hold a World object that represnets current state of game from server. 
         /// </summary>
-        public World world {  get; private set; }
+        public World world { get; private set; } = new World(1000);
 
         /// <summary>
         /// private member boolean that denotes whether the client has recieved
@@ -51,15 +52,8 @@ namespace GUI.Client.Controllers
         /// <summary>
         /// field holding the player's id
         /// </summary>
-        public static int id;
-        /// <summary>
-        /// Constructor method for network controller 
-        /// </summary>
-        /// <param name="connection"></param>
-        public NetworkController(NetworkConnection connection)
-        {
-            this.connection = connection;
-        }
+        public int id { get; private set; }
+
         /// <summary>
         /// Method for connecting to server and sending it the player's name
         /// </summary>
@@ -67,48 +61,43 @@ namespace GUI.Client.Controllers
         /// <param name="host">host server, deafult to localhost</param>
         /// <param name="port">port for game server</param>
         /// <returns></returns>
-        public async Task ConnectToServer(string name, string host, int port)
+        public void ConnectToServer(string name, string host, int port)
         {
             //if name is too long, concatenate it to the proper length
             if (name.Length > 16)
             {
                 name = name.Substring(0, 16);
             }
+            //attempt to connect
             connection.Connect(host, port);
-            if (connection.IsConnected)
+            //send name across connection
+            connection.Send(name);
+        }
+
+
+        public async void ReadServerMessageAsync() 
+        {
+            bool first = true;
+            bool second = true;
+            while (connection.IsConnected)
             {
-                Debug.WriteLine("ConnectToServer(): Client Connected!");
-                //send player's name to server once connected
-                connection.Send(name);
-                //receive player id and worldsize from server
-                id = int.Parse(connection.ReadLine() ?? "0");
-                Debug.WriteLine("ConnectToServer(): id: "+id);
-                worldSize = int.Parse(connection.ReadLine() ?? "0");
-                Debug.WriteLine("ConnectToServer(): World Size: "+worldSize);
-                // initialize this player as well as world
-                snake = new Snake(id);
-                world = new World(worldSize);
-                //recieve walls
-                string? message;
-                while ((message = connection.ReadLine()) != null) 
+                string message = await ReadFromServerAsync();
+                if (!string.IsNullOrEmpty(message))
                 {
-                    if (message.Contains("\"wall\""))
+                    if (first && int.TryParse(message, out int ID))
                     {
-                        Wall? wall = JsonSerializer.Deserialize<Wall>(message);
-                        if (wall != null)
-                        {
-                            world.AddWall(wall);
-                        }
+                        id = ID;
+                        first = false;
                     }
-                    else 
+                    else if (second && int.TryParse(message, out int size))
                     {
-                        //no more wall objects
-                        break;
+                        world = new World(size);
+                        second = false;
                     }
+                    else
+                        ParseMessage(message);
                 }
                 clientCommands = true;
-                //concurrently recueve current state of game at each frame as well as walls
-                _ = Task.Run(() => GetUpdates());
             }
         }
 
@@ -126,7 +115,7 @@ namespace GUI.Client.Controllers
                     //remove/hide snake in model
                     world.RemoveSnake(snake);
                 }
-                else 
+                else
                 {
                     //update or add snake in model
                     world.AddSnake(snake);
@@ -144,6 +133,14 @@ namespace GUI.Client.Controllers
                 {
                     //update or add power up in model
                     world.AddPowerup(power);
+                }
+            }
+            else if (message.Contains("\"wall\""))
+            {
+                Wall? wall = JsonSerializer.Deserialize<Wall>(message);
+                if (wall != null)
+                {
+                    world.AddWall(wall);
                 }
             }
         }
@@ -202,7 +199,7 @@ namespace GUI.Client.Controllers
             Debug.WriteLine("GetUpdates() reached");
             while (connection.IsConnected)
             {
-                string? message = connection.ReadLine();
+                string message = await ReadFromServerAsync();
                 if (!string.IsNullOrEmpty(message))
                 {
                     ParseMessage(message);
@@ -210,6 +207,11 @@ namespace GUI.Client.Controllers
                 }
             }
 
+        }
+
+        private async Task<string> ReadFromServerAsync()
+        {
+                return await Task.Run(() => connection.ReadLine());
         }
 
     }
