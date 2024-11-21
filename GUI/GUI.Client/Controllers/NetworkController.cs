@@ -33,18 +33,6 @@ namespace GUI.Client.Controllers
         public World world { get; private set; } = new World(1000);
 
         /// <summary>
-        /// private member boolean that denotes whether the client has recieved
-        /// the ID and world size and walls from server. Thus it may start making frame commands.
-        /// </summary>
-        private bool clientCommands = false;
-
-        /// <summary>
-        /// private member boolean that denotes whether a command has already been sent
-        /// by the client during the current frame.
-        /// </summary>
-        private bool commandOnFrame = false;
-
-        /// <summary>
         /// field representing the size of the world
         /// </summary>
         public static int worldSize;
@@ -81,23 +69,29 @@ namespace GUI.Client.Controllers
             bool second = true;
             while (connection.IsConnected)
             {
-                string message = await ReadFromServerAsync();
-                if (!string.IsNullOrEmpty(message))
+                try
                 {
-                    if (first && int.TryParse(message, out int ID))
+                    string message = await ReadFromServerAsync();
+                    if (!string.IsNullOrEmpty(message))
                     {
-                        id = ID;
-                        first = false;
+                        if (first && int.TryParse(message, out int ID))
+                        {
+                            id = ID;
+                            first = false;
+                        }
+                        else if (second && int.TryParse(message, out int size))
+                        {
+                            world = new World(size);
+                            second = false;
+                        }
+                        else
+                            ParseMessage(message);
                     }
-                    else if (second && int.TryParse(message, out int size))
-                    {
-                        world = new World(size);
-                        second = false;
-                    }
-                    else
-                        ParseMessage(message);
                 }
-                clientCommands = true;
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error processing message: {ex.Message}");
+                }
             }
         }
 
@@ -146,72 +140,39 @@ namespace GUI.Client.Controllers
         }
 
         /// <summary>
-        /// Helper method for sending commands as JSON objects
-        /// </summary>
-        /// <param name="direction"></param> corresponds to input direction (up, down, left, right)
-        private void SendMovementDirection(string direction) 
-        {
-            // ensure commands are allowed on frame
-            if (clientCommands && !commandOnFrame)
-            {
-                //create an object to hold the command with the moving keyword
-                var sendable = new { moving = direction };
-                //serialize into JSON 
-                string json = JsonSerializer.Serialize(sendable);
-                Debug.WriteLine("SendMovementDirection() serialized key press:"   + json);
-                //send it
-                connection.Send(json);
-                // one command per frame
-                commandOnFrame = true;
-            }
-        }
-        /// <summary>
         /// public wrapper method to handle arrow key presses from GUI
         /// </summary>
         /// <param name="key"></param>
         public void HandleKey(string key) 
         {
-            Debug.WriteLine("HandleKey() handling key press: "+key);
-            if (key == "w")
+            if(key != null)
+                key = key.ToLowerInvariant();
+            switch (key)
             {
-                SendMovementDirection("up");
+                case "w":
+                case "arrowup":
+                    connection.Send(JsonSerializer.Serialize(new { moving = "up" }));
+                    break;
+                case "a":
+                case "arrowleft":
+                    connection.Send(JsonSerializer.Serialize(new { moving = "left" }));
+                    break;
+                case "s":
+                case "arrowdown":
+                    connection.Send(JsonSerializer.Serialize(new { moving = "down" }));
+                    break;
+                case "d":
+                case "arrowright":
+                    connection.Send(JsonSerializer.Serialize(new { moving = "right" }));
+                    break;
+                default:
+                    break;
             }
-            else if (key == "s")
-            {
-                SendMovementDirection("down");
-            }
-            else if (key == "a")
-            {
-                SendMovementDirection("left");
-            }
-            else if (key == "d")
-            {
-                SendMovementDirection("right");
-            }
-        }
-
-        /// <summary>
-        /// Method to continuously update from the server
-        /// </summary>
-        /// <returns></returns>
-        private async Task GetUpdates()
-        {
-            Debug.WriteLine("GetUpdates() reached");
-            while (connection.IsConnected)
-            {
-                string message = await ReadFromServerAsync();
-                if (!string.IsNullOrEmpty(message))
-                {
-                    ParseMessage(message);
-                    commandOnFrame = false;
-                }
-            }
-
         }
 
         private async Task<string> ReadFromServerAsync()
         {
-                return await Task.Run(() => connection.ReadLine());
+                return await Task.Run(() => connection.ReadLine() ?? String.Empty);
         }
 
     }

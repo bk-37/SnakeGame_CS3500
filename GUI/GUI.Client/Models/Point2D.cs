@@ -37,6 +37,9 @@
             this.X = 0;
             this.Y = 0;
         }
-
+        public override string ToString()
+        {
+            return $"({X}, {Y})";
+        }
     }
 }

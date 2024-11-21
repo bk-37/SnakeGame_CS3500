@@ -52,7 +52,6 @@
             jsModule = await JsRuntime.InvokeAsync<IJSObjectReference>( "import", "./Pages/SnakeGUI.razor.js" );
             context = await canvasReference.CreateCanvas2DAsync();
             await JsRuntime.InvokeAsync<object>( "initRenderJS", DotNetObjectReference.Create( this ) );
-            Debug.WriteLine("preparing to loop");
             GameLoop();
             await context.DrawImageAsync(backgroundImage, 0, 0, viewSize, viewSize);
 
@@ -77,14 +76,10 @@
     [JSInvokable]
     public void HandleKeyPress( string key )
     {
-        // TODO: Once the client is connected and the handshake is complete,
-        //       invoke some controller method to send the appropriate command to the server
-        Debug.WriteLine("key pressed: " + key);
-        if (Controller != null)
+        if (Controller.connection.IsConnected)
         {
             Controller.HandleKey(key);
         }
-        else { Debug.WriteLine("HandleKeyPress(): controller null"); }
     }
 
     private async void GameLoop()
@@ -97,7 +92,7 @@
         while (Controller.connection.IsConnected)
         {
             await DrawFrame();
-            Thread.Sleep(20);
+            Thread.Sleep(50);
         }
 
     }

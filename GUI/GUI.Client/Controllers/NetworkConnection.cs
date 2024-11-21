@@ -104,13 +104,12 @@ public sealed class NetworkConnection : IDisposable
     /// <param name="message"> The string of characters to send. </param>
     public void Send( string message )
     {
-        // check for connection, if not connected throw new exception
-        if (_writer == null || !IsConnected) 
+        try
         {
-            throw new InvalidOperationException("Cannot send message: writer disconnected");
+            // send message using writer and Writeline to ensure message starts with new line
+            _writer.WriteLine(message);
         }
-        // send message using writer and Writeline to ensure message starts with new line
-        _writer.WriteLine( message );
+        catch (Exception ex) { Console.WriteLine( ex); }
     }
 
 

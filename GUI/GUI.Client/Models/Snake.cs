@@ -169,7 +169,7 @@ namespace GUI.Client.Models
             // Optionally, draw the snake's name and score near its head
             if (body.Count > 0)
             {
-                Point2D head = body[^1]; // Last point in body is the head
+                Point2D head = body.LastOrDefault(new Point2D(0, 0));
                 await context.SetFillStyleAsync("white");
                 await context.FillTextAsync($"{name} ({score})", head.X + 5, head.Y - 10);
             }
