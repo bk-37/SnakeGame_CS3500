@@ -8,10 +8,12 @@
 @using System.Text.Json
 @using CS3500.Networking
 @using GUI.Client.Controllers
+@using GUI.Client.Models
 @inject IJSRuntime JsRuntime;
 
 <PageTitle> Snake </PageTitle>
-
+<img @ref="backgroundImage" id="bgImage" src="images/Background.png" alt="image" style="display:none;" />
+<img @ref="wallImage" id="bgImage" src="images/WallSprite.png" alt="image" style="display:none;" />
 <!-- Game UI -->
 <div id="gameContainer" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
     <!-- Controls Section -->
@@ -39,24 +41,21 @@
     private NetworkConnection? Connection;
     private NetworkController? Controller;
     private bool isConnected = false;
-
+    private ElementReference backgroundImage;
+    private const int viewSize = 1000;
+    private Point2D head;
+    private ElementReference wallImage;
 
 
     protected override async Task OnAfterRenderAsync( bool firstRender )
     {
+
         if ( firstRender )
         {
             jsModule = await JsRuntime.InvokeAsync<IJSObjectReference>( "import", "./Pages/SnakeGUI.razor.js" );
             context = await canvasReference.CreateCanvas2DAsync();
-            await JsRuntime.InvokeAsync<object>( "initRenderJS", DotNetObjectReference.Create( this ) );           
-
-            // TODO: Start the game loop
-
-            // in the meantime, draw something to initialize the canvas
-            // you may want to remove this after you are drawing something
-            // await context.SetFillStyleAsync( "lightblue" );
-            // await context.FillRectAsync( 0, 0, 1000, 1000 );
-            // await context.DrawImageAsync(backgroundImage, -world.Width / 2, -world.Height / 2, world.Width, world.Height);
+            await JsRuntime.InvokeAsync<object>( "initRenderJS", DotNetObjectReference.Create( this ) );
+            GameLoop();
         }
     }
 
@@ -91,6 +90,69 @@
             Controller.HandleKey(key);
         }
         else { Debug.WriteLine("HandleKeyPress(): controller null"); }
+    }
+
+    private async void GameLoop()
+    {
+        while (true)
+        {
+            await DrawFrame();
+            Thread.Sleep(100);
+        }
+    }
+
+    private async Task DrawFrame()
+    {
+        World? TheWorld = null;
+        Snake? snake = null;
+        if(Controller != null)
+        {
+            TheWorld = Controller.world;
+            snake = Controller.snake;
+        }
+        await context.BeginBatchAsync();
+        // clip the view so that objects drawn outside the canvas will not be shown
+        await context.BeginPathAsync();
+        await context.RectAsync(0, 0, viewSize, viewSize);
+        await context.ClipAsync();
+
+        // Because we are modifying the transformation matrix, we need to save it so we can restore it at the end
+        await context.SaveAsync();
+
+        //update the head point
+        if(snake != null)
+            head = snake.body.FirstOrDefault() ?? new Point2D(0, 0);
+
+        // Center on origin, move to center of view port
+        await context.TranslateAsync(viewSize / 2, viewSize / 2);
+        if(head != null)
+            await context.TranslateAsync(-head.X, -head.Y);
+        // Draw the background:
+        if (TheWorld != null)
+        {
+            await context.DrawImageAsync(backgroundImage, -TheWorld.WorldSize / 2, -TheWorld.WorldSize / 2, TheWorld.WorldSize, TheWorld.WorldSize);
+            //loop through walls and draw them
+            foreach(Wall wall in TheWorld.walls)
+            {
+                await wall.Draw(context, wallImage);
+            }
+            //draw powerups
+            foreach(Power powerup in TheWorld.powerups.Values)
+            {
+                await powerup.Draw(context);
+            }
+            //draw snakes
+            foreach (Snake snakes in TheWorld.snakes.Values)
+            {
+                await snakes.Draw(context);
+            }
+
+        }
+        //restore the transformation matrix
+        await context.RestoreAsync();
+        //finish batch drawing
+        await context.EndBatchAsync();
+        StateHasChanged();
     }
 }
 

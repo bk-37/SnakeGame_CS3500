@@ -22,14 +22,14 @@ namespace GUI.Client.Controllers
         private readonly NetworkConnection connection;
 
         /// <summary>
-        /// member variable to hold the THIS player's snake object
+        /// property to hold the THIS player's snake object
         /// </summary>
-        private Snake snake;
+        public Snake snake {  get; private set; }
 
         /// <summary>
-        /// Member variable to hold a World object that represnets current state of game from server. 
+        /// property to hold a World object that represnets current state of game from server. 
         /// </summary>
-        private World world;
+        public World world {  get; private set; }
 
         /// <summary>
         /// private member boolean that denotes whether the client has recieved
@@ -44,6 +44,15 @@ namespace GUI.Client.Controllers
         private bool commandOnFrame = false;
 
         /// <summary>
+        /// field representing the size of the world
+        /// </summary>
+        public static int worldSize;
+
+        /// <summary>
+        /// field holding the player's id
+        /// </summary>
+        public static int id;
+        /// <summary>
         /// Constructor method for network controller 
         /// </summary>
         /// <param name="connection"></param>
@@ -51,7 +60,6 @@ namespace GUI.Client.Controllers
         {
             this.connection = connection;
         }
-
         /// <summary>
         /// Method for connecting to server and sending it the player's name
         /// </summary>
@@ -73,9 +81,9 @@ namespace GUI.Client.Controllers
                 //send player's name to server once connected
                 connection.Send(name);
                 //receive player id and worldsize from server
-                int id = int.Parse(connection.ReadLine() ?? "0");
+                id = int.Parse(connection.ReadLine() ?? "0");
                 Debug.WriteLine("ConnectToServer(): id: "+id);
-                int worldSize = int.Parse(connection.ReadLine() ?? "0");
+                worldSize = int.Parse(connection.ReadLine() ?? "0");
                 Debug.WriteLine("ConnectToServer(): World Size: "+worldSize);
                 // initialize this player as well as world
                 snake = new Snake(id);
@@ -84,7 +92,6 @@ namespace GUI.Client.Controllers
                 string? message;
                 while ((message = connection.ReadLine()) != null) 
                 {
-                    Debug.WriteLine(message);
                     if (message.Contains("\"wall\""))
                     {
                         Wall? wall = JsonSerializer.Deserialize<Wall>(message);
@@ -92,7 +99,6 @@ namespace GUI.Client.Controllers
                         {
                             world.AddWall(wall);
                         }
-                        Debug.WriteLine("Walls found");
                     }
                     else 
                     {
@@ -102,7 +108,7 @@ namespace GUI.Client.Controllers
                 }
                 clientCommands = true;
                 //concurrently recueve current state of game at each frame as well as walls
-                await GetUpdates();
+                _ = Task.Run(() => GetUpdates());
             }
         }
 
@@ -181,7 +187,7 @@ namespace GUI.Client.Controllers
             {
                 SendMovementDirection("left");
             }
-            else 
+            else if (key == "d")
             {
                 SendMovementDirection("right");
             }

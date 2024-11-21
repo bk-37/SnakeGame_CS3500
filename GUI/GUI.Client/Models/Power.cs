@@ -1,4 +1,7 @@
-﻿namespace GUI.Client.Models
+﻿using Blazor.Extensions.Canvas.Canvas2D;
+using System.Text.Json.Serialization;
+
+namespace GUI.Client.Models
 {
     /// <summary>
     /// Class to represent power up objects in each frame update of game. Power ups can be collected by player snakes in order to grow the snake body in length.
@@ -32,6 +35,32 @@
             this.power = 0;
             this.loc = new();
             this.died = false;
+        }
+        /// <summary>
+        /// Powerup constructor used by the deserialized json messages from the server
+        /// </summary>
+        /// <param name="power"></param>
+        /// <param name="loc"></param>
+        /// <param name="died"></param>
+        [JsonConstructor]
+        public Power(int power, Point2D loc, bool died)
+        {
+            this.power = power;
+            this.loc = loc;
+            this.died = died;
+        }
+
+        public async Task Draw(Canvas2DContext context)
+        {
+            if (died)
+            {
+                return;
+            }
+            const int r = 8;
+            await context.BeginPathAsync();
+            await context.SetFillStyleAsync("red");
+            await context.ArcAsync(loc.X, loc.Y, r, 0, 2 * Math.PI);
+            await context.FillAsync();
         }
     }
 }

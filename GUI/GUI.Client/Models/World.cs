@@ -16,19 +16,23 @@ namespace GUI.Client.Models
         /// <summary>
         /// private member field to store the size of the world sent by the server.
         /// </summary>
-        int WorldSize;
+        public int WorldSize
+        {
+            get;
+            private set;
+        }
         /// <summary>
         /// private dictionary field to store snake/player objecst and their corresponding ids.
         /// </summary>
-        private Dictionary<int, Snake> snakes;
+        public Dictionary<int, Snake> snakes {  get; private set; }
         /// <summary>
         /// private field to store list of walls upon server startup
         /// </summary>
-        private List<Wall> walls;
+        public List<Wall> walls {  get; private set; }
         /// <summary>
         /// private field to store dictionary of powerups active in the current frame.
         /// </summary>
-        private Dictionary<int, Power> powerups;
+        public Dictionary<int, Power> powerups { get; private set; }
         /// <summary>
         /// constructor for World object to represent games state in current frame. Initialzied with worldsize
         /// </summary>

@@ -1,4 +1,10 @@
-﻿namespace GUI.Client.Models
+﻿using Blazor.Extensions.Canvas.Canvas2D;
+using static System.Formats.Asn1.AsnWriter;
+using System.Xml.Linq;
+using System.Diagnostics;
+using System.Text.Json.Serialization;
+
+namespace GUI.Client.Models
 {
     /// <summary>
     /// Class to represent snake objects in each frame update of game. Contains attributes thare sent from server JSON in each frame.
@@ -112,6 +118,72 @@
             this.alive = true;
             this.dc = false;
             this.join = true;
+        }
+
+        /// <summary>
+        /// Constructor for wall class when JSON deserialization is provided
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="name"></param>
+        /// <param name="body"></param>
+        /// <param name="dir"></param>
+        /// <param name="score"></param>
+        /// <param name="died"></param>
+        /// <param name="alive"></param>
+        /// <param name="dc"></param>
+        /// <param name="join"></param>
+        [JsonConstructor]
+        public Snake(int snake, string name, List<Point2D> body, Point2D dir, int score, bool died, bool alive, bool dc, bool join)
+        {
+            this.snake = snake;
+            this.name = name;
+            this.body = body;
+            this.dir = dir;
+            this.score = score;
+            this.died = died;
+            this.alive = alive;
+            this.dc = dc;
+            this.join = join;
+        }
+        /// <summary>
+        /// Helper method for drawing snakes
+        /// </summary>
+        /// <param name="context"></param>
+        public async Task Draw(Canvas2DContext context)
+        {
+            // Set snake color based on ID
+            string color = GetSnakeColor(snake);
+            await context.BeginPathAsync();
+            await context.SetStrokeStyleAsync(color);
+            await context.SetLineWidthAsync(5);
+            //find the first point
+            Point2D tail = body[0];
+            await context.MoveToAsync(tail.X, tail.Y);
+            foreach (Point2D point in body)
+            {
+                await context.LineToAsync(point.X, point.Y);
+            }
+
+            await context.StrokeAsync();
+
+            // Optionally, draw the snake's name and score near its head
+            if (body.Count > 0)
+            {
+                Point2D head = body[^1]; // Last point in body is the head
+                await context.SetFillStyleAsync("white");
+                await context.FillTextAsync($"{name} ({score})", head.X + 5, head.Y - 10);
+            }
+        }
+
+        /// <summary>
+        /// Helper method for determining the color of the snake based on their ID
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        private string GetSnakeColor(int id)
+        {
+            string[] colors = { "red", "blue", "green", "yellow", "purple", "orange", "pink", "cyan" };
+            return colors[id % colors.Length];
         }
     }
 }
