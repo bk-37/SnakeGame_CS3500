@@ -123,7 +123,7 @@ namespace GUI.Client.Models
         /// <summary>
         /// Constructor for wall class when JSON deserialization is provided
         /// </summary>
-        /// <param name="id"></param>
+        /// <param name="snake"></param>
         /// <param name="name"></param>
         /// <param name="body"></param>
         /// <param name="dir"></param>
@@ -155,7 +155,7 @@ namespace GUI.Client.Models
             string color = GetSnakeColor(snake);
             await context.BeginPathAsync();
             await context.SetStrokeStyleAsync(color);
-            await context.SetLineWidthAsync(5);
+            await context.SetLineWidthAsync(10);
             //find the first point
             Point2D tail = body[0];
             await context.MoveToAsync(tail.X, tail.Y);

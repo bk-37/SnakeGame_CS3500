@@ -50,6 +50,10 @@ namespace GUI.Client.Models
             this.p2 = p2;
         }
         
+        /// <summary>
+        /// Method for representing walls as strings for debuggins purposes
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return $"Wall: P1({p1.X}, {p1.Y}) - P2({p2.X}, {p2.Y})";
@@ -62,19 +66,35 @@ namespace GUI.Client.Models
         {
             //determine if wall is horizontal or vertical
             bool isHorizontal = p1.Y == p2.Y;
-            int wallLength = isHorizontal ? Math.Abs(p2.X - p1.X) : Math.Abs(p2.Y - p1.Y);
-            //calculate starting position
-            int startX = Math.Min(p1.X, p2.X);
-            int startY = Math.Min(p1.Y, p2.Y);
+            int wallLength = 0;
+            if(isHorizontal) 
+                wallLength = Math.Abs(p1.X - p2.X);
+            else
+                wallLength = Math.Abs(p1.Y - p2.Y);
             //calculate how many sprites to use
             int numWalls = wallLength / 50;
-            for (int i = 0; i < numWalls; i++)
+            for (int i = 0; i <= numWalls; i++)
             {
-             
-                int drawX = isHorizontal ? startX + i * 50 : startX;
-                int drawY = isHorizontal ? startY : startY + i * 50;
 
-                await context.DrawImageAsync(image, drawX, drawY);
+                int x;
+                int y;
+                if (isHorizontal)
+                {
+                    y = p1.Y;
+                    if (p1.X < p2.X)
+                        x = p1.X + i * 50;
+                    else 
+                        x = p1.X - i * 50;
+                }
+                else
+                {
+                    x = p1.X;
+                    if(p1.Y < p2.Y)
+                        y = p1.Y + i * 50;
+                    else
+                        y = p1.Y - i * 50;
+                }
+                await context.DrawImageAsync(image, x - 25, y - 25, 50, 50);
             }
         }
     }

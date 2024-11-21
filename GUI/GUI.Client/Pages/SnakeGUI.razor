@@ -92,7 +92,7 @@
         while (Controller.connection.IsConnected)
         {
             await DrawFrame();
-            Thread.Sleep(50);
+            await Task.Delay(20);
         }
 
     }
@@ -107,13 +107,15 @@
                 WorldCopy = new World(Controller.world);
             }
         }
-
         //get our snake
         WorldCopy.snakes.TryGetValue(Controller.id, out Snake? playerSnake);
         //update the head point
         if (playerSnake != null)
             head = playerSnake.body.LastOrDefault(new Point2D(0, 0));
         await context.BeginBatchAsync();
+        //draw a background to reset the edges
+        await context.SetFillStyleAsync("cyan");
+        await context.FillRectAsync(0, 0, viewSize, viewSize);
         // clip the view so that objects drawn outside the canvas will not be shown
         await context.BeginPathAsync();
         await context.RectAsync(0, 0, viewSize, viewSize);
