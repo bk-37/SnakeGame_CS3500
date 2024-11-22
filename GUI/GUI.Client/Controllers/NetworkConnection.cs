@@ -8,6 +8,7 @@
 /// November 3rd, 2024
 /// </version>
 
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text;
 namespace CS3500.Networking;
@@ -89,6 +90,10 @@ public sealed class NetworkConnection : IDisposable
             _reader = new StreamReader(_tcpClient.GetStream(), Encoding.UTF8);
             _writer = new StreamWriter(_tcpClient.GetStream(), Encoding.UTF8) { AutoFlush = true };
         }
+        catch (SocketException ex)
+        {
+            throw;
+        }
         catch (Exception ex) { Console.WriteLine(ex); }
     }
 
@@ -109,7 +114,8 @@ public sealed class NetworkConnection : IDisposable
             // send message using writer and Writeline to ensure message starts with new line
             _writer.WriteLine(message);
         }
-        catch (Exception ex) { Console.WriteLine( ex); }
+        catch (SocketException ex) { throw; }
+        catch (Exception ex) { Console.WriteLine( ex ); }
     }
 
 
@@ -127,8 +133,16 @@ public sealed class NetworkConnection : IDisposable
         {
             throw new InvalidOperationException("Cannot read message: reader/network disconnected");
         }
-        string? message = _reader.ReadLine();
-        return message;
+        try
+        {
+            string? message = _reader.ReadLine();
+            return message;
+        }
+        catch(IOException ex)
+        {
+            Debug.WriteLine("Server Disconnected");
+            return null;
+        }
     }
 
     /// <summary>

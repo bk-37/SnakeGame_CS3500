@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using CS3500.Networking;
@@ -56,10 +57,16 @@ namespace GUI.Client.Controllers
             {
                 name = name.Substring(0, 16);
             }
-            //attempt to connect
-            connection.Connect(host, port);
-            //send name across connection
-            connection.Send(name);
+            //attempt to connect and send name
+            try
+            {
+                connection.Connect(host, port);
+                connection.Send(name);
+            }
+            catch(SocketException ex)
+            {
+                throw;
+            }
         }
 
 
@@ -104,7 +111,7 @@ namespace GUI.Client.Controllers
             if (message.Contains("\"snake\""))
             {
                 Snake? snake = JsonSerializer.Deserialize<Snake>(message);
-                if (snake.died == true)
+                if (snake.died || snake.dc)
                 {
                     //remove/hide snake in model
                     world.RemoveSnake(snake);

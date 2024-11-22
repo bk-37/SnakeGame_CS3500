@@ -1,4 +1,5 @@
 ﻿using Blazor.Extensions.Canvas.Canvas2D;
+using Microsoft.AspNetCore.Components;
 using System.Text.Json.Serialization;
 
 namespace GUI.Client.Models
@@ -50,17 +51,13 @@ namespace GUI.Client.Models
             this.died = died;
         }
 
-        public async Task Draw(Canvas2DContext context)
+        public async Task Draw(Canvas2DContext context, ElementReference apple)
         {
             if (died)
             {
                 return;
             }
-            const int r = 8;
-            await context.BeginPathAsync();
-            await context.SetFillStyleAsync("red");
-            await context.ArcAsync(loc.X, loc.Y, r, 0, 2 * Math.PI);
-            await context.FillAsync();
+            await context.DrawImageAsync(apple, loc.X - 12, loc.Y- 12, 25, 25);
         }
     }
 }

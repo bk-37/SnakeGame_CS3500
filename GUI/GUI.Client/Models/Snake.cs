@@ -3,6 +3,7 @@ using static System.Formats.Asn1.AsnWriter;
 using System.Xml.Linq;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
+using System.Drawing;
 
 namespace GUI.Client.Models
 {
@@ -89,6 +90,9 @@ namespace GUI.Client.Models
             get; 
             private set;
         }
+
+        private readonly Random random = new Random();
+
         /// <summary>
         /// Default constructor for snake class. Fields set to values that are common to every snake upon startup. ID set to 0 to denote default construction.
         /// </summary>
@@ -149,32 +153,81 @@ namespace GUI.Client.Models
         /// Helper method for drawing snakes
         /// </summary>
         /// <param name="context"></param>
-        public async Task Draw(Canvas2DContext context)
+        public async Task DrawAlive(Canvas2DContext context)
         {
             // Set snake color based on ID
-            string color = GetSnakeColor(snake);
-            await context.BeginPathAsync();
-            await context.SetStrokeStyleAsync(color);
             await context.SetLineWidthAsync(10);
-            //find the first point
+            //find the tail and head of the snake
+            Point2D head = body.Last();
             Point2D tail = body[0];
-            await context.MoveToAsync(tail.X, tail.Y);
-            foreach (Point2D point in body)
+            string[] stripeColors;
+            if (!died)
+                stripeColors = [GetSnakeColor(snake), GetSnakeColor(snake + 1)];
+            else
+                stripeColors = ["red", "red"];
+            int stripeWidth = 10; // Width of each stripe
+                                  //draw body pieces
+            for (int i = 0; i < body.Count - 1; i++)
             {
-                await context.LineToAsync(point.X, point.Y);
+                Point2D start = body[i];
+                Point2D end = body[i + 1];
+                await context.BeginPathAsync();
+                await context.MoveToAsync(start.X, start.Y);
+                await context.LineToAsync(end.X, end.Y);
+                // Alternate stripe colors
+                await context.SetStrokeStyleAsync(stripeColors[i % stripeColors.Length]);
+                await context.SetLineWidthAsync(stripeWidth);
+                await context.StrokeAsync();
+                // Draw rounded joint if there's a next segment
+                if (i < body.Count - 2)
+                {
+                    Point2D next = body[i + 2];
+                    // Check if there is a turn at the current joint
+                    if (start.X != next.X && start.Y != next.Y)
+                    {
+                        // Calculate joint center point
+                        int centerX = end.X;
+                        int centerY = end.Y;
+                        await context.BeginPathAsync();
+                        await context.ArcAsync(centerX, centerY, stripeWidth / 2, 0, 2 * Math.PI);
+                        await context.SetFillStyleAsync(stripeColors[(i + 1) % stripeColors.Length]);
+                        await context.FillAsync();
+                    }
+                }
             }
-
-            await context.StrokeAsync();
-
-            // Optionally, draw the snake's name and score near its head
-            if (body.Count > 0)
-            {
-                Point2D head = body.LastOrDefault(new Point2D(0, 0));
-                await context.SetFillStyleAsync("white");
-                await context.FillTextAsync($"{name} ({score})", head.X + 5, head.Y - 10);
-            }
+            // Draw rounded tail
+            await context.SetFillStyleAsync(GetSnakeColor(snake)); // Tail color matches base color
+            await context.BeginPathAsync();
+            await context.ArcAsync(tail.X, tail.Y, stripeWidth / 2, 0, 2 * Math.PI);
+            await context.FillAsync();
+            // Draw rounded head
+            Point2D headPoint = body.Last();
+            await context.SetFillStyleAsync("rgba(0, 0, 0, 0.75)"); // Head color matches base color
+            await context.BeginPathAsync();
+            await context.ArcAsync(headPoint.X, headPoint.Y, stripeWidth / 1.5, 0, 2 * Math.PI);
+            await context.FillAsync();
+            // Draw name and score near the head
+            await context.SetFillStyleAsync("black");
+            await context.FillTextAsync($"{name} ({score})", headPoint.X + 10, headPoint.Y - 10);
         }
 
+        public async Task DrawDead(Canvas2DContext context)
+        {
+            await context.SetStrokeStyleAsync("red");
+            await context.SetLineWidthAsync(10);
+            if (body.Count > 0)
+            {
+                await context.BeginPathAsync();
+                Point2D tail = body[0];
+                await context.MoveToAsync(tail.X, tail.Y);
+
+                foreach (Point2D point in body)
+                {
+                    await context.LineToAsync(point.X, point.Y);
+                }
+            }
+            await context.StrokeAsync();
+        }
         /// <summary>
         /// Helper method for determining the color of the snake based on their ID
         /// </summary>
@@ -182,7 +235,7 @@ namespace GUI.Client.Models
         /// <returns></returns>
         private string GetSnakeColor(int id)
         {
-            string[] colors = { "red", "blue", "green", "yellow", "purple", "orange", "pink", "cyan" };
+            string[] colors = {"blue", "green", "yellow", "purple", "orange", "pink", "cyan" };
             return colors[id % colors.Length];
         }
     }

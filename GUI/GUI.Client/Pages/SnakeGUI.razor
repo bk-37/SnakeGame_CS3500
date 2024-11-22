@@ -9,11 +9,14 @@
 @using CS3500.Networking
 @using GUI.Client.Controllers
 @using GUI.Client.Models
+@using System.Net.Sockets
 @inject IJSRuntime JsRuntime;
 
 <PageTitle> Snake </PageTitle>
 <img @ref="backgroundImage" id="bgImage" src="images/Background.png" alt="image" style="display:none;" />
 <img @ref="wallImage" id="bgImage" src="images/WallSprite.png" alt="image" style="display:none;" />
+<img @ref="welcomePage" id="bgImage" src="images/welcomePage.png" alt="image" style="display:none;" />
+<img @ref="apple" id="bgImage" src="images/apple.png" alt="image" style="display:none;" />
 <!-- Game UI -->
 <div id="gameContainer" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
     <!-- Controls Section -->
@@ -21,7 +24,14 @@
         <input type="text" placeholder="Enter Player Name" @bind="playerName" style="margin: 5px;" />
         <input type="text" placeholder="Server Address" @bind="serverAddress" style="margin: 5px;" />
         <input type="text" placeholder="Port" @bind="port" style="margin: 5px;" />
-        <button @onclick="connectToServer" style="margin: 5px;">Connect</button>
+        @if(!isConnected)
+        {
+            <button @onclick="connectToServer" style="margin: 5px;">Connect</button>
+        }
+        else
+        {
+            <button @onclick="disconnectFromServer" style="margin: 5px;">Disconnect</button>
+        }
     </div>
 
     <!-- Game Canvas -->
@@ -29,6 +39,55 @@
         <BECanvas Width="1000" Height="1000" @ref="canvasReference"></BECanvas>
     </div>
 </div>
+
+@if (showPopup)
+{
+    <div class="popup-overlay">
+        <div class="popup-content">
+            <h2>@popupTitle</h2>
+            <p>@popupMessage</p>
+            <button @onclick="ClosePopup">OK</button>
+        </div>
+    </div>
+}
+
+<style>
+    .popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .popup-content {
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        width: 300px;
+    }
+
+        .popup-content button {
+            margin-top: 10px;
+            padding: 8px 16px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+            .popup-content button:hover {
+                background-color: #0056b3;
+            }
+</style>
 
 @code{
     private BECanvasComponent canvasReference = null!;
@@ -39,9 +98,16 @@
     private int port = 11000;
     private NetworkController Controller = new();
     private ElementReference backgroundImage;
+    private ElementReference wallImage;
+    private ElementReference welcomePage;
+    private ElementReference apple;
     private const int viewSize = 1000;
     private Point2D head;
-    private ElementReference wallImage;
+    private bool isConnected = false;
+    private bool reConnected = true;
+    private bool showPopup = false;
+    private string popupTitle;
+    private string popupMessage;
 
 
     protected override async Task OnAfterRenderAsync( bool firstRender )
@@ -53,7 +119,7 @@
             context = await canvasReference.CreateCanvas2DAsync();
             await JsRuntime.InvokeAsync<object>( "initRenderJS", DotNetObjectReference.Create( this ) );
             GameLoop();
-            await context.DrawImageAsync(backgroundImage, 0, 0, viewSize, viewSize);
+            await context.DrawImageAsync(welcomePage, 0, 0, viewSize, viewSize);
 
         }
     }
@@ -62,14 +128,47 @@
     {
         try
         {
+            Controller = new NetworkController();
             Controller.ConnectToServer(playerName, serverAddress, port);
+            isConnected = true;
             Debug.WriteLine("ConnectToServer() connected");
+            if (!reConnected)
+                GameLoop();
+            reConnected = true;
+        }
+        catch(SocketException ex)
+        {
+            ShowPopup("Connection Error", $"Failed to connect, server is not running");
         }
         catch(Exception ex)
         {
-            Debug.WriteLine($"ConnectToServer(): {ex.Message}");
+            Debug.WriteLine($"Failed to Connect: {ex.Message}");
         }
+    }
 
+    private void disconnectFromServer()
+    {
+        if(Controller != null)
+        {
+            Controller.connection.Disconnect();
+            isConnected = false;
+            reConnected = false;
+            context.DrawImageAsync(welcomePage, 0, 0, viewSize, viewSize);
+        }
+    }
+
+    private void ClosePopup()
+    {
+        showPopup = false;
+        StateHasChanged();
+    }
+
+    private void ShowPopup(string title, string message)
+    {
+        popupTitle = title;
+        popupMessage = message;
+        showPopup = true;
+        StateHasChanged();
     }
 
 
@@ -113,47 +212,65 @@
         if (playerSnake != null)
             head = playerSnake.body.LastOrDefault(new Point2D(0, 0));
         await context.BeginBatchAsync();
-        //draw a background to reset the edges
-        await context.SetFillStyleAsync("cyan");
-        await context.FillRectAsync(0, 0, viewSize, viewSize);
-        // clip the view so that objects drawn outside the canvas will not be shown
-        await context.BeginPathAsync();
-        await context.RectAsync(0, 0, viewSize, viewSize);
-        await context.ClipAsync();
-
-        // Because we are modifying the transformation matrix, we need to save it so we can restore it at the end
-        await context.SaveAsync();
-
-        // Center on origin, move to center of view port
-        await context.TranslateAsync(viewSize / 2, viewSize / 2);
-        if(head != null)
-            await context.TranslateAsync(-head.X, -head.Y);
-        // Draw the background:
-        if (WorldCopy != null)
+        //use a try catch for drawing to catch excpetions
+        try
         {
-            await context.DrawImageAsync(backgroundImage, -WorldCopy.WorldSize / 2, -WorldCopy.WorldSize / 2, WorldCopy.WorldSize, WorldCopy.WorldSize);
-            //loop through walls and draw them
-            foreach(Wall wall in WorldCopy.walls)
-            {
-                await wall.Draw(context, wallImage);
-            }
-            //draw powerups
-            foreach(Power powerup in WorldCopy.powerups.Values)
-            {
-                await powerup.Draw(context);
-            }
-            //draw snakes
-            foreach (Snake snakes in WorldCopy.snakes.Values)
-            {
-                await snakes.Draw(context);
-            }
+            //draw a background to reset the edges
+            await context.SetFillStyleAsync("cyan");
+            await context.FillRectAsync(0, 0, viewSize, viewSize);
+            // clip the view so that objects drawn outside the canvas will not be shown
+            await context.BeginPathAsync();
+            await context.RectAsync(0, 0, viewSize, viewSize);
+            await context.ClipAsync();
 
+            // Because we are modifying the transformation matrix, we need to save it so we can restore it at the end
+            await context.SaveAsync();
+
+            // Center on origin, move to center of view port
+            await context.TranslateAsync(viewSize / 2, viewSize / 2);
+            if (head != null)
+                await context.TranslateAsync(-head.X, -head.Y);
+            // Draw the background:
+            if (WorldCopy != null)
+            {
+                await context.DrawImageAsync(backgroundImage, -WorldCopy.WorldSize / 2, -WorldCopy.WorldSize / 2, WorldCopy.WorldSize, WorldCopy.WorldSize);
+                //loop through walls and draw them
+                foreach (Wall wall in WorldCopy.walls)
+                {
+                    await wall.Draw(context, wallImage);
+                }
+                //draw powerups
+                foreach (Power powerup in WorldCopy.powerups.Values)
+                {
+                    await powerup.Draw(context, apple);
+                }
+                //draw snakes
+                foreach (Snake snakes in WorldCopy.snakes.Values)
+                {
+                    if (snakes.alive)
+                    {
+                        await snakes.DrawAlive(context);
+                    }
+                    else
+                    {
+                        await snakes.DrawDead(context);
+                    }
+                }
+            }
+            //restore the transformation matrix
+            await context.RestoreAsync();
+            //finish batch drawing
+            await context.EndBatchAsync();
+            StateHasChanged();
         }
-        //restore the transformation matrix
-        await context.RestoreAsync();
-        //finish batch drawing
-        await context.EndBatchAsync();
-        StateHasChanged();
+        catch(JSException ex)
+        {
+            Debug.WriteLine($"JsException occurred: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Unexpected exception: {ex.Message}");
+        }
     }
 }
 
