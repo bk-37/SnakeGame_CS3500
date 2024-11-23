@@ -41,7 +41,12 @@ namespace GUI.Client.Models
             this.p1 = new Point2D();
             this.p2 = new Point2D();
         }
-
+        /// <summary>
+        /// Wall constructor used for creating walls from deserialized Json 
+        /// </summary>
+        /// <param name="wall"></param>
+        /// <param name="p1"></param>
+        /// <param name="p2"></param>
         [JsonConstructor]
         public Wall(int wall, Point2D p1, Point2D p2)
         {
@@ -61,7 +66,7 @@ namespace GUI.Client.Models
         /// <summary>
         /// helper method to draw walls
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="context"> drawing context </param>
         public async Task Draw(Canvas2DContext context, ElementReference image)
         {
             //determine if wall is horizontal or vertical
@@ -75,7 +80,6 @@ namespace GUI.Client.Models
             int numWalls = wallLength / 50;
             for (int i = 0; i <= numWalls; i++)
             {
-
                 int x;
                 int y;
                 if (isHorizontal)

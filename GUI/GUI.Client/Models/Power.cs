@@ -51,6 +51,12 @@ namespace GUI.Client.Models
             this.died = died;
         }
 
+        /// <summary>
+        /// Helper method for drawing the powerup
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="apple"></param>
+        /// <returns></returns>
         public async Task Draw(Canvas2DContext context, ElementReference apple)
         {
             if (died)

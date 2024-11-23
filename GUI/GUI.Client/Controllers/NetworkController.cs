@@ -69,7 +69,9 @@ namespace GUI.Client.Controllers
             }
         }
 
-
+        /// <summary>
+        /// Method called by the game loop to read incoming messages from the server and parse them according to their order 
+        /// </summary>
         public async void ReadServerMessageAsync() 
         {
             bool first = true;
@@ -118,7 +120,6 @@ namespace GUI.Client.Controllers
                 }
                 else
                 {
-                    //update or add snake in model
                     world.AddSnake(snake);
                 }
             }
@@ -177,6 +178,10 @@ namespace GUI.Client.Controllers
             }
         }
 
+        /// <summary>
+        /// Helper method for reading lines sent from the server
+        /// </summary>
+        /// <returns></returns>
         private async Task<string> ReadFromServerAsync()
         {
                 return await Task.Run(() => connection.ReadLine() ?? String.Empty);

@@ -46,6 +46,11 @@ namespace GUI.Client.Models
             powerups = new Dictionary<int, Power>();
         }
 
+        /// <summary>
+        /// Constructor for world objects that takes an existing world object as a parameter
+        /// Used to copy world objects when drawing frames
+        /// </summary>
+        /// <param name="world"></param>
         public World(World world)
         {
             this.WorldSize = world.WorldSize;
@@ -53,20 +58,7 @@ namespace GUI.Client.Models
             this.walls = world.walls;
             this.powerups = world.powerups;
         }
-        /// <summary>
-        /// method to remove all dead objects from game. Includes snakes and powerups.
-        /// </summary>
-        private void RemoveDeadObjects() 
-        {
-            for (int i = snakes.Count - 1; i >= 0; i--) 
-            {
-                if (snakes[i].died) { snakes.Remove(snakes[i].snake); }
-            }
-            for (int i = powerups.Count - 1; i >= 0; i--) 
-            {
-                if (powerups[i].died) {  powerups.Remove(powerups[i].power);}
-            }
-        }
+
         /// <summary>
         /// helper method to add wall object to list of walls
         /// </summary>
@@ -83,6 +75,7 @@ namespace GUI.Client.Models
         {
             snakes[snake.snake] = snake;
         }
+
         /// <summary>
         /// helper method to add power up objects to dictionary of power ups
         /// </summary>
@@ -90,14 +83,6 @@ namespace GUI.Client.Models
         public void AddPowerup(Power power)
         {
             powerups[power.power] = power;
-        }
-        /// <summary>
-        /// helper method to remove wall object to list of walls
-        /// </summary>
-        /// <param name="wall">wall object to be removed</param>
-        public void RemoveWall(Wall wall)
-        {
-            walls.Remove(wall);
         }
         /// <summary>
         /// helper method to remove snake object to dictionary of snakes using id as key.

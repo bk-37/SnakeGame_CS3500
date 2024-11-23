@@ -37,6 +37,10 @@
             this.X = 0;
             this.Y = 0;
         }
+        /// <summary>
+        /// helper method for representing points as strings for debugging purposes
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return $"({X}, {Y})";

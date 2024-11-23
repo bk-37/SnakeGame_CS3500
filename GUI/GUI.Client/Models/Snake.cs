@@ -91,8 +91,6 @@ namespace GUI.Client.Models
             private set;
         }
 
-        private readonly Random random = new Random();
-
         /// <summary>
         /// Default constructor for snake class. Fields set to values that are common to every snake upon startup. ID set to 0 to denote default construction.
         /// </summary>
@@ -126,6 +124,7 @@ namespace GUI.Client.Models
 
         /// <summary>
         /// Constructor for wall class when JSON deserialization is provided
+        /// Refer to member descriptions for parameter descriptions
         /// </summary>
         /// <param name="snake"></param>
         /// <param name="name"></param>
@@ -150,67 +149,84 @@ namespace GUI.Client.Models
             this.join = join;
         }
         /// <summary>
-        /// Helper method for drawing snakes
+        /// Helper method for drawing snakes that are currently alive
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="context"> drawing context </param>
         public async Task DrawAlive(Canvas2DContext context)
         {
-            // Set snake color based on ID
-            await context.SetLineWidthAsync(10);
-            //find the tail and head of the snake
-            Point2D head = body.Last();
-            Point2D tail = body[0];
-            string[] stripeColors;
-            if (!died)
-                stripeColors = [GetSnakeColor(snake), GetSnakeColor(snake + 1)];
-            else
-                stripeColors = ["red", "red"];
-            int stripeWidth = 10; // Width of each stripe
-                                  //draw body pieces
-            for (int i = 0; i < body.Count - 1; i++)
+            // Set snake colors based on I
+            string[] stripeColors = { GetSnakeColor(snake), GetSnakeColor(snake+1) };
+            int stripeWidth = 10; 
+            // Desired stripe length
+            float stripeLength = 20f;
+            // Initialize variables
+            int colorIndex = 0;
+            float remainingStripeLength = stripeLength;
+            // Start from the tail
+            if (body.Count < 2)
+                return;
+            Point2D prevPoint = body[0];
+            int i = 1;
+            await context.SetLineWidthAsync(stripeWidth);
+            while (i < body.Count)
             {
-                Point2D start = body[i];
-                Point2D end = body[i + 1];
-                await context.BeginPathAsync();
-                await context.MoveToAsync(start.X, start.Y);
-                await context.LineToAsync(end.X, end.Y);
-                // Alternate stripe colors
-                await context.SetStrokeStyleAsync(stripeColors[i % stripeColors.Length]);
-                await context.SetLineWidthAsync(stripeWidth);
-                await context.StrokeAsync();
-                // Draw rounded joint if there's a next segment
-                if (i < body.Count - 2)
+                Point2D currPoint = body[i];
+                // Calculate the distance between prevPoint and currPoint
+                float dx = currPoint.X - prevPoint.X;
+                float dy = currPoint.Y - prevPoint.Y;
+                float segmentLength = MathF.Sqrt(dx * dx + dy * dy);
+                float segmentStartOffset = 0f;
+                while (segmentLength - segmentStartOffset > 0)
                 {
-                    Point2D next = body[i + 2];
-                    // Check if there is a turn at the current joint
-                    if (start.X != next.X && start.Y != next.Y)
+                    float drawLength = MathF.Min(remainingStripeLength, segmentLength - segmentStartOffset);
+                    // Calculate the start and end points of the current stripe segment
+                    float tStart = segmentStartOffset / segmentLength;
+                    float tEnd = (segmentStartOffset + drawLength) / segmentLength;
+                    float startX = prevPoint.X + dx * tStart;
+                    float startY = prevPoint.Y + dy * tStart;
+                    float endX = prevPoint.X + dx * tEnd;
+                    float endY = prevPoint.Y + dy * tEnd;
+                    // Draw the stripe segment
+                    await context.BeginPathAsync();
+                    await context.SetStrokeStyleAsync(stripeColors[colorIndex % stripeColors.Length]);
+                    await context.MoveToAsync(startX, startY);
+                    await context.LineToAsync(endX, endY);
+                    await context.StrokeAsync();
+                    remainingStripeLength -= drawLength;
+                    segmentStartOffset += drawLength;
+                    // If the stripe is complete, switch color
+                    if (remainingStripeLength <= 0)
                     {
-                        // Calculate joint center point
-                        int centerX = end.X;
-                        int centerY = end.Y;
-                        await context.BeginPathAsync();
-                        await context.ArcAsync(centerX, centerY, stripeWidth / 2, 0, 2 * Math.PI);
-                        await context.SetFillStyleAsync(stripeColors[(i + 1) % stripeColors.Length]);
-                        await context.FillAsync();
+                        colorIndex++;
+                        remainingStripeLength += stripeLength;
                     }
                 }
+                // Move to the next segment
+                prevPoint = currPoint;
+                i++;
             }
+            Point2D tail = body[0];
             // Draw rounded tail
             await context.SetFillStyleAsync(GetSnakeColor(snake)); // Tail color matches base color
             await context.BeginPathAsync();
             await context.ArcAsync(tail.X, tail.Y, stripeWidth / 2, 0, 2 * Math.PI);
             await context.FillAsync();
             // Draw rounded head
-            Point2D headPoint = body.Last();
+            Point2D head = body.Last();
             await context.SetFillStyleAsync("rgba(0, 0, 0, 0.75)"); // Head color matches base color
             await context.BeginPathAsync();
-            await context.ArcAsync(headPoint.X, headPoint.Y, stripeWidth / 1.5, 0, 2 * Math.PI);
+            await context.ArcAsync(head.X, head.Y, stripeWidth / 1.5, 0, 2 * Math.PI);
             await context.FillAsync();
             // Draw name and score near the head
             await context.SetFillStyleAsync("black");
-            await context.FillTextAsync($"{name} ({score})", headPoint.X + 10, headPoint.Y - 10);
+            await context.FillTextAsync($"{name} ({score})", head.X + 10, head.Y - 10);
         }
 
+        /// <summary>
+        /// Helper method for drawing snakes that are no longer alive
+        /// </summary>
+        /// <param name="context"> drawing context </param>
+        /// <returns></returns>
         public async Task DrawDead(Canvas2DContext context)
         {
             await context.SetStrokeStyleAsync("red");
@@ -231,7 +247,7 @@ namespace GUI.Client.Models
         /// <summary>
         /// Helper method for determining the color of the snake based on their ID
         /// </summary>
-        /// <param name="id"></param>
+        /// <param name="id"> client id number </param>
         /// <returns></returns>
         private string GetSnakeColor(int id)
         {

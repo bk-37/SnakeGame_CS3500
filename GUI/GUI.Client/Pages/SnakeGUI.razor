@@ -1,4 +1,11 @@
-﻿@page "/snake"
+﻿<!-- .razor file to handle the graphical component of the client-->
+<!-- <authors>
+    /// Brian Keller & Wyatt Young
+    /// </authors>
+    /// <versions>
+    /// November 22nd, 2024
+    /// </versions> -->
+@page "/snake"
 @rendermode InteractiveServer
 @using Blazor.Extensions
 @using Blazor.Extensions.Canvas
@@ -24,7 +31,7 @@
         <input type="text" placeholder="Enter Player Name" @bind="playerName" style="margin: 5px;" />
         <input type="text" placeholder="Server Address" @bind="serverAddress" style="margin: 5px;" />
         <input type="text" placeholder="Port" @bind="port" style="margin: 5px;" />
-        @if(!isConnected)
+        @if (!isConnected)
         {
             <button @onclick="connectToServer" style="margin: 5px;">Connect</button>
         }
@@ -39,7 +46,7 @@
         <BECanvas Width="1000" Height="1000" @ref="canvasReference"></BECanvas>
     </div>
 </div>
-
+<!-- Popup window for error messages-->
 @if (showPopup)
 {
     <div class="popup-overlay">
@@ -50,7 +57,6 @@
         </div>
     </div>
 }
-
 <style>
     .popup-overlay {
         position: fixed;
@@ -89,41 +95,105 @@
             }
 </style>
 
-@code{
+@code {
+    /// <summary>
+    /// Reference variable for creating an html canvas to draw on
+    /// </summary>
     private BECanvasComponent canvasReference = null!;
+    /// <summary>
+    /// 2D drawing context for the canvas
+    /// </summary>
     private Canvas2DContext context = null!;
+    /// <summary>
+    /// Reference to JavaScript module for interoperation calls
+    /// </summary>
     private IJSObjectReference jsModule = null!;
+    /// <summary>
+    /// Field to store player's name
+    /// </summary>
     private string playerName = string.Empty;
+    /// <summary>
+    /// field to hold the name of the server
+    /// </summary>
     private string serverAddress = "localhost";
+    /// <summary>
+    /// field to hold the port the client is connecting through
+    /// </summary>
     private int port = 11000;
+    /// <summary>
+    /// Controller object for creating a network connection
+    /// </summary>
     private NetworkController Controller = new();
+    /// <summary>
+    /// variable to hold the background image
+    /// </summary>
     private ElementReference backgroundImage;
+    /// <summary>
+    /// variable to hold the wall sprite image
+    /// </summary>
     private ElementReference wallImage;
+    /// <summary>
+    /// variable to hold the splash page image
+    /// </summary>
     private ElementReference welcomePage;
+    /// <summary>
+    /// variable to hold the powerup image
+    /// </summary>
     private ElementReference apple;
+    /// <summary>
+    /// variable representing the size of the client's view frame
+    /// </summary>
     private const int viewSize = 1000;
-    private Point2D head;
+    /// <summary>
+    /// field describing whether or not the client is connected to the server
+    /// </summary>
     private bool isConnected = false;
-    private bool reConnected = true;
+    /// <summary>
+    /// field describing whether or not the client has previously connected to the server
+    /// </summary>
+    private bool reConnected = false;
+    /// <summary>
+    /// variable representing the state of any popup error window/message
+    /// popup is shown when true, not shown when false
+    /// </summary>
     private bool showPopup = false;
-    private string popupTitle;
-    private string popupMessage;
+    /// <summary>
+    /// field for holding the title of a popup window
+    /// </summary>
+    private string popupTitle = "";
+    /// <summary>
+    /// field for holding the message in a popup window
+    /// </summary>
+    private string popupMessage = "";
+    /// <summary>
+    /// point object representing the head of the client's snake model
+    /// </summary>
+    private Point2D head;
 
-
-    protected override async Task OnAfterRenderAsync( bool firstRender )
+    /// <summary>
+    /// Method handling the setup of the canvas and starting the game loop
+    /// Also draws a splash page before a game loop is started
+    /// </summary>
+    /// <param name="firstRender"> boolean representing whether or not this is the first time the client is rendering </param>
+    /// <returns></returns>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
 
-        if ( firstRender )
+        if (firstRender)
         {
-            jsModule = await JsRuntime.InvokeAsync<IJSObjectReference>( "import", "./Pages/SnakeGUI.razor.js" );
+            jsModule = await JsRuntime.InvokeAsync<IJSObjectReference>("import", "./Pages/SnakeGUI.razor.js");
             context = await canvasReference.CreateCanvas2DAsync();
-            await JsRuntime.InvokeAsync<object>( "initRenderJS", DotNetObjectReference.Create( this ) );
+            await JsRuntime.InvokeAsync<object>("initRenderJS", DotNetObjectReference.Create(this));
             GameLoop();
             await context.DrawImageAsync(welcomePage, 0, 0, viewSize, viewSize);
 
         }
     }
 
+    /// <summary>
+    /// Helper method for connecting the client to the server
+    /// Triggered by a click on the 'connect' button
+    /// </summary>
     private void connectToServer()
     {
         try
@@ -131,38 +201,49 @@
             Controller = new NetworkController();
             Controller.ConnectToServer(playerName, serverAddress, port);
             isConnected = true;
-            Debug.WriteLine("ConnectToServer() connected");
-            if (!reConnected)
+            if (reConnected)
                 GameLoop();
-            reConnected = true;
+            reConnected = false;
         }
-        catch(SocketException ex)
+        catch (SocketException ex)
         {
             ShowPopup("Connection Error", $"Failed to connect, server is not running");
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Debug.WriteLine($"Failed to Connect: {ex.Message}");
         }
     }
 
+    /// <summary>
+    /// Helper method for disconnecting the client from the server
+    /// Triggerd by a click on the 'disconnect' button
+    /// </summary>
     private void disconnectFromServer()
     {
-        if(Controller != null)
+        if (Controller != null)
         {
             Controller.connection.Disconnect();
             isConnected = false;
-            reConnected = false;
+            reConnected = true;
             context.DrawImageAsync(welcomePage, 0, 0, viewSize, viewSize);
         }
     }
 
+    /// <summary>
+    /// Helper method for closing a popup window
+    /// </summary>
     private void ClosePopup()
     {
         showPopup = false;
         StateHasChanged();
     }
 
+    /// <summary>
+    /// Helper method for showing a popup window 
+    /// </summary>
+    /// <param name="title"> title of the popup window </param>
+    /// <param name="message"> message displayed under the title of a popup window </param>
     private void ShowPopup(string title, string message)
     {
         popupTitle = title;
@@ -171,9 +252,12 @@
         StateHasChanged();
     }
 
-
+    /// <summary>
+    /// Method to get key presses from the client and send them to the network controller for Json serialization
+    /// </summary>
+    /// <param name="key"> string representation of a key that is pressed </param>
     [JSInvokable]
-    public void HandleKeyPress( string key )
+    public void HandleKeyPress(string key)
     {
         if (Controller.connection.IsConnected)
         {
@@ -181,6 +265,9 @@
         }
     }
 
+    /// <summary>
+    /// Method for waiting until the network connection is established, reading messages from the serve, and drawing frames from those messages
+    /// </summary>
     private async void GameLoop()
     {
         while (!Controller.connection.IsConnected)
@@ -196,12 +283,18 @@
 
     }
 
+    /// <summary>
+    /// Method handling the drawing of each frame for the client
+    /// </summary>
+    /// <returns></returns>
     private async Task DrawFrame()
     {
+        //Make a copy of the world object to pull drawing data from
         World? WorldCopy = null;
-        if(Controller != null)
+        if (Controller != null)
         {
-            lock(Controller.world)
+            //lock around the world before copying to prevent race conditions
+            lock (Controller.world)
             {
                 WorldCopy = new World(Controller.world);
             }
@@ -263,7 +356,7 @@
             await context.EndBatchAsync();
             StateHasChanged();
         }
-        catch(JSException ex)
+        catch (JSException ex)
         {
             Debug.WriteLine($"JsException occurred: {ex.Message}");
         }
