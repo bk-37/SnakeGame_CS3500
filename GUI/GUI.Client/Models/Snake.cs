@@ -218,7 +218,8 @@ namespace GUI.Client.Models
             await context.ArcAsync(head.X, head.Y, stripeWidth / 1.5, 0, 2 * Math.PI);
             await context.FillAsync();
             // Draw name and score near the head
-            await context.SetFillStyleAsync("black");
+            await context.SetFontAsync("bold 20px Arial");
+            await context.SetFillStyleAsync("rgba(0, 0, 0, 0.75)");
             await context.FillTextAsync($"{name} ({score})", head.X + 10, head.Y - 10);
         }
 

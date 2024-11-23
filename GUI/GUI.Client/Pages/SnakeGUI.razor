@@ -201,6 +201,7 @@
             Controller = new NetworkController();
             Controller.ConnectToServer(playerName, serverAddress, port);
             isConnected = true;
+            //if the client has previously connected, begin the game loop
             if (reConnected)
                 GameLoop();
             reConnected = false;

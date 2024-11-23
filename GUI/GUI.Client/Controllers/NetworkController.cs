@@ -74,25 +74,30 @@ namespace GUI.Client.Controllers
         /// </summary>
         public async void ReadServerMessageAsync() 
         {
+            //variables for tracking the first and second messages read status
             bool first = true;
             bool second = true;
             while (connection.IsConnected)
             {
                 try
                 {
+                    //get message from server
                     string message = await ReadFromServerAsync();
                     if (!string.IsNullOrEmpty(message))
                     {
+                        //if message is the first message sent, set it as ID
                         if (first && int.TryParse(message, out int ID))
                         {
                             id = ID;
                             first = false;
                         }
+                        //if message is the second message sent, set it as world size
                         else if (second && int.TryParse(message, out int size))
                         {
                             world = new World(size);
                             second = false;
                         }
+                        //otherwise, parse the message according to the Json elements
                         else
                             ParseMessage(message);
                     }
@@ -110,6 +115,7 @@ namespace GUI.Client.Controllers
         /// <param name="message"></param>
         private void ParseMessage(string message)
         {
+            //Parse snake objects
             if (message.Contains("\"snake\""))
             {
                 Snake? snake = JsonSerializer.Deserialize<Snake>(message);
@@ -120,9 +126,11 @@ namespace GUI.Client.Controllers
                 }
                 else
                 {
+                    //add snake to world
                     world.AddSnake(snake);
                 }
             }
+            //parse powerup objects
             else if (message.Contains("\"power\""))
             {
                 Power? power = JsonSerializer.Deserialize<Power>(message);
@@ -137,11 +145,13 @@ namespace GUI.Client.Controllers
                     world.AddPowerup(power);
                 }
             }
+            //parse wall objects
             else if (message.Contains("\"wall\""))
             {
                 Wall? wall = JsonSerializer.Deserialize<Wall>(message);
                 if (wall != null)
                 {
+                    //add wall to world
                     world.AddWall(wall);
                 }
             }
@@ -150,11 +160,12 @@ namespace GUI.Client.Controllers
         /// <summary>
         /// public wrapper method to handle arrow key presses from GUI
         /// </summary>
-        /// <param name="key"></param>
+        /// <param name="key"> string representation of key pressed </param>
         public void HandleKey(string key) 
         {
             if(key != null)
                 key = key.ToLowerInvariant();
+            //determine which key was pressed via switch case and send the corresponding message to the server via Json
             switch (key)
             {
                 case "w":

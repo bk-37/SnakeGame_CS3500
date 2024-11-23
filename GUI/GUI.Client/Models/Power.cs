@@ -54,11 +54,12 @@ namespace GUI.Client.Models
         /// <summary>
         /// Helper method for drawing the powerup
         /// </summary>
-        /// <param name="context"></param>
-        /// <param name="apple"></param>
+        /// <param name="context"> drawing context </param>
+        /// <param name="apple"> powerup image to draw </param>
         /// <returns></returns>
         public async Task Draw(Canvas2DContext context, ElementReference apple)
         {
+            //don't draw dead powerups 
             if (died)
             {
                 return;

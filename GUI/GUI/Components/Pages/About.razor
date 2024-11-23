@@ -2,6 +2,35 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Wilkommen zu das BME Blazors Snake Spiel!</h1>
 
-Welcome to your new app.
+<p>Overview of the basic high level design decisions of the provided Snake game:</p>
+<ul>
+    <li>We abstracted each object in the game(snake, powerup, wall) into their own classes which includes Json constructors for deserialization from the server as well as their own draw methods. We also included a World class which holds the current game objects and their states.</li>
+    <li>We also abstracted our network code in two main classes: the previously implemented NetworkConnection class which creates a TCP client and their corresponing readers/writers and the NetworkController class which contains the network protocol for one of these TCP clients. Specifically, takes care of handshake with server and deserializing incoming messages from server as well as outgoing movement directions from the client.</li>
+    <li>All of the graphical rendering is contained in the provided SnakeGUI.razor file. This is also where we call the game loop, handle pop-up messages, and render  .png images used in the game. </li>
+    <li>Thus we seperated the Models(Snake, Powerup, Wall, and World), Views(SnakeGUI.razor), and Controllers(NetworkController) of the game into their own classes according to their concerns. </li>
+    <li>The game loop begins after a client connects. It is also restarted whenever a client selects the disconnect button and then reconnects.</li>
+    <li>If the server is not active, a popup message is displayed; the user may try to reconnect after dismissing the window (the connect button is reactivated according to specs).</li>
+    <li>
+        Our client features graphical differences from the provided example such as:
+        <ul>
+            <li>Snakes are striped throughout each segment using two selected colors.</li>
+            <li>Powerups are rendered as a PNG apple image and dissapear on the next frame.</li>
+            <li>An AI splash screen is added that appears upon startup as well as when the client disconnects (between disconnect button presses and connect button presses).</li>
+            <li>When a snake is received as dead from the server, the snake's head disappears and the body becomes no longer striped and remains red, indicating to other players that it's dead.</li>
+        </ul>
+    </li>
+    <li>
+        Our client features the following back-end design changes:
+        <ul>
+            <li>Snake objects may be controlled using either WASD controls or the arrow keys. </li>
+            <li>A client can disconnect from the game, and when 'connect' is pressed again, the player will respawn with a fresh snake (and thus score).</li>
+        </ul>
+    </li>
+</ul>
+<p>What doesn't work:</p>
+<li>A powerup animation wasn't added which would've been cool</li>
+<li>The snake death animation could have also been spiced up but according to the specs the snakes are designated as dead</li>
+<li>When a client closes the tab nothing happens but the exception is caught</li>
+<li>A scoreboard would have been a nice touch when there are many players in the world</li>

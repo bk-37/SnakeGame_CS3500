@@ -82,6 +82,7 @@ namespace GUI.Client.Models
             {
                 int x;
                 int y;
+                //determine drawing coordinates for each sprite
                 if (isHorizontal)
                 {
                     y = p1.Y;
