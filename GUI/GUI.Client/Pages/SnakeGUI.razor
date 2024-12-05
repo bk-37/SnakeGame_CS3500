@@ -17,6 +17,7 @@
 @using GUI.Client.Controllers
 @using GUI.Client.Models
 @using System.Net.Sockets
+@using MySql.Data.MySqlClient
 @inject IJSRuntime JsRuntime;
 
 <PageTitle> Snake </PageTitle>
@@ -171,6 +172,15 @@
     private Point2D head;
 
     /// <summary>
+    /// The connection string.
+    /// Your uID login name serves as both your database name and your uid
+    /// </summary>
+    public const string connectionString = "server=atr.eng.utah.edu;" +
+      "database=u1364562;" +
+      "uid=u1364562;" +
+      "password=BME_BLAZOR42069";
+
+    /// <summary>
     /// Method handling the setup of the canvas and starting the game loop
     /// Also draws a splash page before a game loop is started
     /// </summary>
@@ -200,6 +210,13 @@
         {
             Controller = new NetworkController();
             Controller.ConnectToServer(playerName, serverAddress, port);
+            //connect to the database and send a start time
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                MySqlCommand command = conn.CreateCommand();
+                command.CommandText = $"INSERT INTO Games (startTime, endTime) VALUES ('{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}', NULL)";
+            }
             isConnected = true;
             //if the client has previously connected, begin the game loop
             if (reConnected)
@@ -225,6 +242,13 @@
         if (Controller != null)
         {
             Controller.connection.Disconnect();
+            //connect to the database and send an end time
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                MySqlCommand command = conn.CreateCommand();
+                command.CommandText = $"INSERT INTO Games (endTime) VALUES ('{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}')";
+            }
             isConnected = false;
             reConnected = true;
             context.DrawImageAsync(welcomePage, 0, 0, viewSize, viewSize);
