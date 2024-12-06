@@ -75,7 +75,6 @@ namespace WebServer
             else if(request.Contains($"GET /games?gid="))
             {
                 string idParam = request.Split('=')[1].Split(' ')[0];
-                Debug.WriteLine(idParam);
                 if (int.TryParse(idParam, out int gameID))
                 {
                     connection.Send(httpGoodHeader + GeneratePlayersTable(gameID));

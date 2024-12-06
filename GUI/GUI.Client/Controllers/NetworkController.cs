@@ -151,7 +151,6 @@ namespace GUI.Client.Controllers
                     {
                         maxScores[snake.snake] = snake.score;
                         int gameID = SnakeGUI.gameID;
-                        Debug.WriteLine(gameID);
                         sendToDataBase($"insert into Players (playerID, name, maxScore, enterTime, gameID) values ('{snake.snake}', '{snake.name}', '{maxScores[snake.snake]}', '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}', '{gameID}')");
                     }
                     //add snake to world
@@ -240,7 +239,6 @@ namespace GUI.Client.Controllers
             //connect to the database and send a start time
             using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
-                Debug.WriteLine(query);
                 conn.Open();
                 MySqlCommand command = conn.CreateCommand();
                 command.CommandText = query;
