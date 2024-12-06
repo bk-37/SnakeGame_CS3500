@@ -172,6 +172,11 @@
     private Point2D head;
 
     /// <summary>
+    /// Property for holding the current game's id number
+    /// </summary>
+    public static int gameID { get; private set; }
+
+    /// <summary>
     /// The connection string.
     /// Your uID login name serves as both your database name and your uid
     /// </summary>
@@ -179,6 +184,7 @@
       "database=u1364562;" +
       "uid=u1364562;" +
       "password=BME_BLAZOR42069";
+
 
     /// <summary>
     /// Method handling the setup of the canvas and starting the game loop
@@ -210,14 +216,17 @@
         {
             Controller = new NetworkController();
             Controller.ConnectToServer(playerName, serverAddress, port);
-            //connect to the database and send a start time
+            isConnected = true;
             using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
                 conn.Open();
                 MySqlCommand command = conn.CreateCommand();
-                command.CommandText = $"INSERT INTO Games (startTime, endTime) VALUES ('{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}', NULL)";
+                command.CommandText = $"insert into Games (startTime, endTime) values ('{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}', NULL)";
+                command.ExecuteNonQuery();
+                MySqlCommand getID = conn.CreateCommand();
+                getID.CommandText = "select last_insert_id();";
+                gameID = Convert.ToInt32(getID.ExecuteScalar());
             }
-            isConnected = true;
             //if the client has previously connected, begin the game loop
             if (reConnected)
                 GameLoop();
@@ -247,7 +256,10 @@
             {
                 conn.Open();
                 MySqlCommand command = conn.CreateCommand();
-                command.CommandText = $"INSERT INTO Games (endTime) VALUES ('{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}')";
+                command.CommandText = $"update Games set endTime = '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}' where gameID = {gameID}";
+                command.ExecuteNonQuery();
+                command.CommandText = $"update Players set leaveTime = '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}' where leaveTime is unknown";
+                command.ExecuteNonQuery();
             }
             isConnected = false;
             reConnected = true;

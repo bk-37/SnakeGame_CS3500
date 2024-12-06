@@ -1,9 +1,12 @@
 ﻿using System.Diagnostics;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using CS3500.Networking;
 using GUI.Client.Models;
+using GUI.Client.Pages;
+using MySql.Data.MySqlClient;
 namespace GUI.Client.Controllers
 {
     /// <summary>
@@ -42,6 +45,20 @@ namespace GUI.Client.Controllers
         /// field holding the player's id
         /// </summary>
         public int id { get; private set; }
+
+        /// <summary>
+        /// The connection string.
+        /// Your uID login name serves as both your database name and your uid
+        /// </summary>
+        public const string connectionString = "server=atr.eng.utah.edu;" +
+          "database=u1364562;" +
+          "uid=u1364562;" +
+          "password=BME_BLAZOR42069";
+
+        /// <summary>
+        /// Dictionary for holding snakes' max scores with their player id's
+        /// </summary>
+        private Dictionary<int, int> maxScores = new();
 
         /// <summary>
         /// Method for connecting to server and sending it the player's name
@@ -121,13 +138,29 @@ namespace GUI.Client.Controllers
                 Snake? snake = JsonSerializer.Deserialize<Snake>(message);
                 if (snake.died || snake.dc)
                 {
+                    if (snake.dc && world.snakes.ContainsKey(snake.snake))
+                    {
+                        sendToDataBase($"update Players set leaveTime = '{DateTime.Now:yyyy-MM-dd HH:mm:ss}' where playerID = {snake.snake}");
+                    }
                     //remove/hide snake in model
                     world.RemoveSnake(snake);
                 }
                 else
                 {
+                    if (snake.join && !world.snakes.ContainsKey(snake.snake))
+                    {
+                        maxScores[snake.snake] = snake.score;
+                        int gameID = SnakeGUI.gameID;
+                        Debug.WriteLine(gameID);
+                        sendToDataBase($"insert into Players (playerID, name, maxScore, enterTime, gameID) values ('{snake.snake}', '{snake.name}', '{maxScores[snake.snake]}', '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}', '{gameID}')");
+                    }
                     //add snake to world
                     world.AddSnake(snake);
+                }
+                if(snake.score > maxScores[snake.snake])
+                {
+                    maxScores[snake.snake] = snake.score;
+                    sendToDataBase("update Players set maxScore =" + maxScores[snake.snake] + " where playerID = " + snake.snake + " and gameID = last_insert_id();");
                 }
             }
             //parse powerup objects
@@ -198,5 +231,21 @@ namespace GUI.Client.Controllers
                 return await Task.Run(() => connection.ReadLine() ?? String.Empty);
         }
 
+        /// <summary>
+        /// Helper method to send queries to the database
+        /// </summary>
+        /// <param name="query"> the query being sent to mySQL </param>
+        private static void sendToDataBase(string query)
+        {
+            //connect to the database and send a start time
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                Debug.WriteLine(query);
+                conn.Open();
+                MySqlCommand command = conn.CreateCommand();
+                command.CommandText = query;
+                command.ExecuteNonQuery();
+            }
+        }
     }
 }
